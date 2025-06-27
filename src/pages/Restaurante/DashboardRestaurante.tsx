@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Layout/Header';
 import ConfiguracaoPagamento from '@/components/Restaurante/ConfiguracaoPagamento';
+import GerenciadorCupons from '@/components/Restaurante/GerenciadorCupons';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +16,8 @@ import {
   Package,
   Settings,
   CreditCard,
-  Star
+  Star,
+  Tag
 } from 'lucide-react';
 
 const DashboardRestaurante: React.FC = () => {
@@ -112,8 +114,12 @@ const DashboardRestaurante: React.FC = () => {
         </div>
 
         <Tabs defaultValue="resumo" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="resumo">Resumo</TabsTrigger>
+            <TabsTrigger value="cupons">
+              <Tag className="w-4 h-4 mr-2" />
+              Cupons
+            </TabsTrigger>
             <TabsTrigger value="pagamentos">
               <CreditCard className="w-4 h-4 mr-2" />
               Pagamentos
@@ -304,6 +310,20 @@ const DashboardRestaurante: React.FC = () => {
                 </Card>
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="cupons">
+            <Card>
+              <CardHeader>
+                <CardTitle>Gerenciamento de Cupons</CardTitle>
+                <p className="text-sm text-gray-600">
+                  Crie e gerencie cupons de desconto para seus clientes
+                </p>
+              </CardHeader>
+              <CardContent>
+                <GerenciadorCupons />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="pagamentos">

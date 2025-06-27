@@ -1,16 +1,24 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Layout/Header';
 import CarrinhoItem from '@/components/Cliente/CarrinhoItem';
 import PagamentoPix from '@/components/Pagamento/PagamentoPix';
+import AplicadorCupom from '@/components/Cliente/AplicadorCupom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { restaurantes } from '@/data/mockData';
 import { toast } from '@/hooks/use-toast';
+
+interface CupomAplicado {
+  codigo: string;
+  descricao: string;
+  tipo: 'percentual' | 'fixo';
+  valor: number;
+}
 
 const CarrinhoPage: React.FC = () => {
   const [user, setUser] = useState<any>(null);
@@ -18,8 +26,7 @@ const CarrinhoPage: React.FC = () => {
   const [endereco, setEndereco] = useState('');
   const [pagamento, setPagamento] = useState<'pix' | 'cartao'>('pix');
   const [observacoes, setObservacoes] = useState('');
-  const [cupom, setCupom] = useState('');
-  const [desconto, setDesconto] = useState(0);
+  const [cupomAplicado, setCupomAplicado] = useState<CupomAplicado | null>(null);
   const [showPixModal, setShowPixModal] = useState(false);
   const [pedidoId, setPedidoId] = useState('');
   const navigate = useNavigate();
@@ -60,26 +67,8 @@ const CarrinhoPage: React.FC = () => {
     });
   };
 
-  const handleAplicarCupom = () => {
-    const cuponsValidos = {
-      'DESCONTO10': 10,
-      'PRIMEIRACOMPRA': 15,
-      'FRETEGRATIS': 5
-    };
-
-    if (cuponsValidos[cupom as keyof typeof cuponsValidos]) {
-      setDesconto(cuponsValidos[cupom as keyof typeof cuponsValidos]);
-      toast({
-        title: 'Cupom aplicado!',
-        description: `Desconto de ${cuponsValidos[cupom as keyof typeof cuponsValidos]}% aplicado.`,
-      });
-    } else {
-      toast({
-        title: 'Cupom inválido',
-        description: 'O cupom informado não é válido.',
-        variant: 'destructive'
-      });
-    }
+  const handleCupomChange = (cupom: CupomAplicado | null) => {
+    setCupomAplicado(cupom);
   };
 
   const handleFinalizarPedido = () => {
@@ -134,6 +123,10 @@ const CarrinhoPage: React.FC = () => {
       endereco,
       pagamento,
       observacoes,
+      cupom: cupomAplicado,
+      subtotal,
+      taxaEntrega,
+      valorDesconto,
       total: totalFinal,
       status: 'recebido',
       dataCriacao: new Date().toISOString()
@@ -161,8 +154,14 @@ const CarrinhoPage: React.FC = () => {
 
   const subtotal = carrinho.reduce((total, item) => total + (item.preco * item.quantidade), 0);
   const taxaEntrega = restaurantePedido?.taxaEntrega || 0;
-  const valorDesconto = (subtotal * desconto) / 100;
-  const totalFinal = subtotal + taxaEntrega - valorDesconto;
+  
+  const valorDesconto = cupomAplicado ? (
+    cupomAplicado.tipo === 'percentual' 
+      ? (subtotal * cupomAplicado.valor) / 100
+      : cupomAplicado.valor
+  ) : 0;
+  
+  const totalFinal = Math.max(0, subtotal + taxaEntrega - valorDesconto);
 
   if (!user) return null;
 
@@ -242,24 +241,12 @@ const CarrinhoPage: React.FC = () => {
                   <CardTitle>Resumo do Pedido</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* Cupom de Desconto */}
-                  <div>
-                    <Label htmlFor="cupom">Cupom de Desconto</Label>
-                    <div className="flex space-x-2">
-                      <Input
-                        id="cupom"
-                        value={cupom}
-                        onChange={(e) => setCupom(e.target.value.toUpperCase())}
-                        placeholder="Digite o cupom"
-                      />
-                      <Button variant="outline" onClick={handleAplicarCupom}>
-                        Aplicar
-                      </Button>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Cupons válidos: DESCONTO10, PRIMEIRACOMPRA, FRETEGRATIS
-                    </p>
-                  </div>
+                  {/* Aplicador de Cupom */}
+                  <AplicadorCupom
+                    onCupomAplicado={handleCupomChange}
+                    cupomAtual={cupomAplicado}
+                    subtotal={subtotal}
+                  />
 
                   {/* Forma de Pagamento */}
                   <div>
@@ -296,9 +283,9 @@ const CarrinhoPage: React.FC = () => {
                       <span>Taxa de entrega:</span>
                       <span>R$ {taxaEntrega.toFixed(2)}</span>
                     </div>
-                    {desconto > 0 && (
+                    {valorDesconto > 0 && (
                       <div className="flex justify-between text-green-600">
-                        <span>Desconto ({desconto}%):</span>
+                        <span>Desconto ({cupomAplicado?.codigo}):</span>
                         <span>-R$ {valorDesconto.toFixed(2)}</span>
                       </div>
                     )}
