@@ -1,10 +1,25 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
+
+// Páginas principais
+import HomePage from "./pages/HomePage";
+import LoginForm from "./components/Auth/LoginForm";
 import NotFound from "./pages/NotFound";
+
+// Páginas do Cliente
+import RestaurantesPage from "./pages/Cliente/RestaurantesPage";
+import RestauranteDetalhePage from "./pages/Cliente/RestauranteDetalhePage";
+import CarrinhoPage from "./pages/Cliente/CarrinhoPage";
+
+// Páginas do Restaurante
+import DashboardRestaurante from "./pages/Restaurante/DashboardRestaurante";
+
+// Páginas do Entregador
+import DashboardEntregador from "./pages/Entregador/DashboardEntregador";
 
 const queryClient = new QueryClient();
 
@@ -15,8 +30,23 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          {/* Rotas Públicas */}
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginForm />} />
+          <Route path="/cadastro" element={<LoginForm />} />
+          
+          {/* Rotas do Cliente */}
+          <Route path="/restaurantes" element={<RestaurantesPage />} />
+          <Route path="/restaurante/:id" element={<RestauranteDetalhePage />} />
+          <Route path="/carrinho" element={<CarrinhoPage />} />
+          
+          {/* Rotas do Restaurante */}
+          <Route path="/dashboard-restaurante" element={<DashboardRestaurante />} />
+          
+          {/* Rotas do Entregador */}
+          <Route path="/dashboard-entregador" element={<DashboardEntregador />} />
+          
+          {/* Catch-all route */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
