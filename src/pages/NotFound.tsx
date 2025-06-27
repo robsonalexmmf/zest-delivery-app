@@ -1,24 +1,42 @@
-import { useLocation } from "react-router-dom";
-import { useEffect } from "react";
 
-const NotFound = () => {
-  const location = useLocation();
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Home, ArrowLeft } from 'lucide-react';
 
-  useEffect(() => {
-    console.error(
-      "404 Error: User attempted to access non-existent route:",
-      location.pathname
-    );
-  }, [location.pathname]);
+const NotFound: React.FC = () => {
+  const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">404</h1>
-        <p className="text-xl text-gray-600 mb-4">Oops! Page not found</p>
-        <a href="/" className="text-blue-500 hover:text-blue-700 underline">
-          Return to Home
-        </a>
+        <div className="mb-8">
+          <h1 className="text-9xl font-bold text-red-600">404</h1>
+          <h2 className="text-3xl font-bold text-gray-800 mb-4">
+            Página não encontrada
+          </h2>
+          <p className="text-gray-600 mb-8 max-w-md mx-auto">
+            A página que você está procurando não existe ou foi movida para outro local.
+          </p>
+        </div>
+        
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Button 
+            onClick={() => navigate(-1)}
+            variant="outline"
+            className="flex items-center"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Voltar
+          </Button>
+          <Button 
+            onClick={() => navigate('/')}
+            className="bg-red-600 hover:bg-red-700 flex items-center"
+          >
+            <Home className="w-4 h-4 mr-2" />
+            Ir para Home
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Layout/Header';
+import ModalAvaliacao from '@/components/Cliente/ModalAvaliacao';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { Clock, MapPin, Star, Package } from 'lucide-react';
 
 const MeusPedidosPage: React.FC = () => {
   const [user, setUser] = useState<any>(null);
+  const [modalAvaliacao, setModalAvaliacao] = useState({ isOpen: false, pedidoId: '', restaurante: '' });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -70,9 +71,12 @@ const MeusPedidosPage: React.FC = () => {
     return statusMap[status as keyof typeof statusMap] || statusMap.preparando;
   };
 
-  const handleAvaliar = (pedidoId: string) => {
-    // Simular avaliação
-    console.log(`Avaliando pedido ${pedidoId}`);
+  const handleAvaliar = (pedidoId: string, restaurante: string) => {
+    setModalAvaliacao({ isOpen: true, pedidoId, restaurante });
+  };
+
+  const handleCloseModal = () => {
+    setModalAvaliacao({ isOpen: false, pedidoId: '', restaurante: '' });
   };
 
   const handleRastrear = (pedidoId: string) => {
@@ -170,7 +174,7 @@ const MeusPedidosPage: React.FC = () => {
                       <Button 
                         size="sm"
                         className="bg-red-600 hover:bg-red-700"
-                        onClick={() => handleAvaliar(pedido.id)}
+                        onClick={() => handleAvaliar(pedido.id, pedido.restaurante)}
                       >
                         <Star className="w-4 h-4 mr-1" />
                         Avaliar
@@ -216,6 +220,14 @@ const MeusPedidosPage: React.FC = () => {
           </div>
         )}
       </main>
+
+      {/* Modal de Avaliação */}
+      <ModalAvaliacao
+        isOpen={modalAvaliacao.isOpen}
+        onClose={handleCloseModal}
+        pedidoId={modalAvaliacao.pedidoId}
+        restaurante={modalAvaliacao.restaurante}
+      />
     </div>
   );
 };

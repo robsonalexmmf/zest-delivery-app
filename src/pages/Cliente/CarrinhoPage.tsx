@@ -1,13 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Layout/Header';
 import CarrinhoItem from '@/components/Cliente/CarrinhoItem';
+import PagamentoPix from '@/components/Pagamento/PagamentoPix';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { restaurantes } from '@/data/mockData';
 import { toast } from '@/hooks/use-toast';
@@ -20,6 +20,8 @@ const CarrinhoPage: React.FC = () => {
   const [observacoes, setObservacoes] = useState('');
   const [cupom, setCupom] = useState('');
   const [desconto, setDesconto] = useState(0);
+  const [showPixModal, setShowPixModal] = useState(false);
+  const [pedidoId, setPedidoId] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -99,15 +101,41 @@ const CarrinhoPage: React.FC = () => {
       return;
     }
 
+    // Gerar ID do pedido
+    const novoIdPedido = `#${Date.now().toString().slice(-6)}`;
+    setPedidoId(novoIdPedido);
+
+    // Se for PIX, abrir modal de pagamento
+    if (pagamento === 'pix') {
+      setShowPixModal(true);
+    } else {
+      // Simular pagamento com cartão
+      finalizarPedidoComCartao(novoIdPedido);
+    }
+  };
+
+  const finalizarPedidoComCartao = (id: string) => {
+    // Simular processamento do cartão
+    toast({
+      title: 'Processando pagamento...',
+      description: 'Aguarde enquanto processamos seu cartão.',
+    });
+
+    setTimeout(() => {
+      confirmarPedido(id);
+    }, 3000);
+  };
+
+  const confirmarPedido = (id: string) => {
     // Simular criação do pedido
     const pedido = {
-      id: Math.random().toString(36),
+      id,
       produtos: carrinho,
       endereco,
       pagamento,
       observacoes,
       total: totalFinal,
-      status: 'aguardando',
+      status: 'recebido',
       dataCriacao: new Date().toISOString()
     };
 
@@ -235,16 +263,27 @@ const CarrinhoPage: React.FC = () => {
 
                   {/* Forma de Pagamento */}
                   <div>
-                    <Label htmlFor="pagamento">Forma de Pagamento</Label>
-                    <Select value={pagamento} onValueChange={(value: any) => setPagamento(value)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pix">PIX</SelectItem>
-                        <SelectItem value="cartao">Cartão de Crédito</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label>Forma de Pagamento</Label>
+                    <RadioGroup value={pagamento} onValueChange={(value: any) => setPagamento(value)}>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="pix" id="pix" />
+                        <Label htmlFor="pix" className="flex items-center cursor-pointer">
+                          <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs mr-2">
+                            PIX
+                          </span>
+                          Pagamento instantâneo
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="cartao" id="cartao" />
+                        <Label htmlFor="cartao" className="flex items-center cursor-pointer">
+                          <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs mr-2">
+                            Cartão
+                          </span>
+                          Cartão de Crédito
+                        </Label>
+                      </div>
+                    </RadioGroup>
                   </div>
 
                   {/* Valores */}
@@ -274,7 +313,7 @@ const CarrinhoPage: React.FC = () => {
                     className="w-full bg-red-600 hover:bg-red-700"
                     size="lg"
                   >
-                    Finalizar Pedido
+                    {pagamento === 'pix' ? 'Pagar com PIX' : 'Pagar com Cartão'}
                   </Button>
                 </CardContent>
               </Card>
@@ -282,6 +321,15 @@ const CarrinhoPage: React.FC = () => {
           </div>
         )}
       </main>
+
+      {/* Modal de Pagamento PIX */}
+      <PagamentoPix
+        isOpen={showPixModal}
+        onClose={() => setShowPixModal(false)}
+        valor={totalFinal}
+        pedidoId={pedidoId}
+        onPagamentoConfirmado={() => confirmarPedido(pedidoId)}
+      />
     </div>
   );
 };

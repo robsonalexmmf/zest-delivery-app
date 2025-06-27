@@ -1,11 +1,20 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Layout/Header';
+import ConfiguracaoPagamento from '@/components/Restaurante/ConfiguracaoPagamento';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { DollarSign, Package, Clock, Star } from 'lucide-react';
+import { 
+  DollarSign, 
+  ShoppingCart, 
+  Clock, 
+  TrendingUp,
+  Package,
+  Settings,
+  CreditCard
+} from 'lucide-react';
 
 const DashboardRestaurante: React.FC = () => {
   const [user, setUser] = useState<any>(null);
@@ -93,192 +102,237 @@ const DashboardRestaurante: React.FC = () => {
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">
-            Dashboard - {user.nome}
+            Dashboard do Restaurante
           </h1>
           <p className="text-gray-600">
-            Gerencie seu restaurante e acompanhe suas vendas
+            Acompanhe o desempenho do seu negócio
           </p>
         </div>
 
-        {/* Cards de Estatísticas */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  Vendas Hoje
-                </CardTitle>
-                <DollarSign className="w-4 h-4 text-green-600" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                R$ {estatisticas.vendas.hoje.toFixed(2)}
-              </div>
-              <p className="text-xs text-gray-500">
-                +12% em relação a ontem
-              </p>
-            </CardContent>
-          </Card>
+        <Tabs defaultValue="resumo" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="resumo">Resumo</TabsTrigger>
+            <TabsTrigger value="pagamentos">
+              <CreditCard className="w-4 h-4 mr-2" />
+              Pagamentos
+            </TabsTrigger>
+            <TabsTrigger value="configuracoes">
+              <Settings className="w-4 h-4 mr-2" />
+              Configurações
+            </TabsTrigger>
+          </TabsList>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  Pedidos Hoje
-                </CardTitle>
-                <Package className="w-4 h-4 text-blue-600" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
-                {estatisticas.pedidos.total_hoje}
-              </div>
-              <p className="text-xs text-gray-500">
-                {estatisticas.pedidos.pendentes} pendentes
-              </p>
-            </CardContent>
-          </Card>
+          <TabsContent value="resumo" className="space-y-6">
+            {/* Cards de Estatísticas */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <Card>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-medium text-gray-600">
+                      Vendas Hoje
+                    </CardTitle>
+                    <DollarSign className="w-4 h-4 text-green-600" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600">
+                    R$ {estatisticas.vendas.hoje.toFixed(2)}
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    +12% em relação a ontem
+                  </p>
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  Tempo Médio
-                </CardTitle>
-                <Clock className="w-4 h-4 text-orange-600" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-orange-600">
-                32min
-              </div>
-              <p className="text-xs text-gray-500">
-                Preparação + entrega
-              </p>
-            </CardContent>
-          </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-medium text-gray-600">
+                      Pedidos Hoje
+                    </CardTitle>
+                    <Package className="w-4 h-4 text-blue-600" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {estatisticas.pedidos.total_hoje}
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    {estatisticas.pedidos.pendentes} pendentes
+                  </p>
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  Avaliação
-                </CardTitle>
-                <Star className="w-4 h-4 text-yellow-600" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">
-                {estatisticas.avaliacao}
-              </div>
-              <p className="text-xs text-gray-500">
-                Baseado em 234 avaliações
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+              <Card>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-medium text-gray-600">
+                      Tempo Médio
+                    </CardTitle>
+                    <Clock className="w-4 h-4 text-orange-600" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-orange-600">
+                    32min
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Preparação + entrega
+                  </p>
+                </CardContent>
+              </Card>
 
-        {/* Pedidos Recentes */}
-        <div className="grid lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Pedidos Recentes</CardTitle>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => navigate('/pedidos-restaurante')}
-                  >
-                    Ver Todos
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {pedidosRecentes.map(pedido => (
-                    <div key={pedido.id} className="border-b pb-4 last:border-b-0">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-3">
-                          <span className="font-semibold">{pedido.id}</span>
-                          <span className="text-gray-600">{pedido.cliente}</span>
+              <Card>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-medium text-gray-600">
+                      Avaliação
+                    </CardTitle>
+                    <Star className="w-4 h-4 text-yellow-600" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-yellow-600">
+                    {estatisticas.avaliacao}
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Baseado em 234 avaliações
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Pedidos Recentes */}
+            <div className="grid lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2">
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle>Pedidos Recentes</CardTitle>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => navigate('/pedidos-restaurante')}
+                      >
+                        Ver Todos
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {pedidosRecentes.map(pedido => (
+                        <div key={pedido.id} className="border-b pb-4 last:border-b-0">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center space-x-3">
+                              <span className="font-semibold">{pedido.id}</span>
+                              <span className="text-gray-600">{pedido.cliente}</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Badge className={getStatusBadge(pedido.status).color}>
+                                {getStatusBadge(pedido.status).label}
+                              </Badge>
+                              <span className="text-sm text-gray-500">{pedido.tempo}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="text-sm text-gray-600">
+                              {pedido.produtos.join(', ')}
+                            </div>
+                            <div className="font-bold text-green-600">
+                              R$ {pedido.valor.toFixed(2)}
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <Badge className={getStatusBadge(pedido.status).color}>
-                            {getStatusBadge(pedido.status).label}
-                          </Badge>
-                          <span className="text-sm text-gray-500">{pedido.tempo}</span>
-                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Ações Rápidas */}
+              <div>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Ações Rápidas</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <Button 
+                      className="w-full bg-red-600 hover:bg-red-700"
+                      onClick={() => navigate('/produtos')}
+                    >
+                      Gerenciar Produtos
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => navigate('/pedidos-restaurante')}
+                    >
+                      Ver Pedidos
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => navigate('/relatorios')}
+                    >
+                      Relatórios
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Status do Restaurante */}
+                <Card className="mt-6">
+                  <CardHeader>
+                    <CardTitle>Status do Restaurante</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span>Status:</span>
+                        <Badge className="bg-green-100 text-green-800">Aberto</Badge>
                       </div>
                       <div className="flex items-center justify-between">
-                        <div className="text-sm text-gray-600">
-                          {pedido.produtos.join(', ')}
-                        </div>
-                        <div className="font-bold text-green-600">
-                          R$ {pedido.valor.toFixed(2)}
-                        </div>
+                        <span>Produtos:</span>
+                        <span>{estatisticas.produtos.disponivel}/{estatisticas.produtos.total}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Pedidos na fila:</span>
+                        <span>{estatisticas.pedidos.pendentes + estatisticas.pedidos.preparando}</span>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </TabsContent>
 
-          {/* Ações Rápidas */}
-          <div>
+          <TabsContent value="pagamentos">
             <Card>
               <CardHeader>
-                <CardTitle>Ações Rápidas</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button 
-                  className="w-full bg-red-600 hover:bg-red-700"
-                  onClick={() => navigate('/produtos')}
-                >
-                  Gerenciar Produtos
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => navigate('/pedidos-restaurante')}
-                >
-                  Ver Pedidos
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => navigate('/relatorios')}
-                >
-                  Relatórios
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Status do Restaurante */}
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle>Status do Restaurante</CardTitle>
+                <CardTitle>Configuração de Pagamentos</CardTitle>
+                <p className="text-sm text-gray-600">
+                  Configure como você deseja receber os pagamentos dos pedidos
+                </p>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span>Status:</span>
-                    <Badge className="bg-green-100 text-green-800">Aberto</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Produtos:</span>
-                    <span>{estatisticas.produtos.disponivel}/{estatisticas.produtos.total}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Pedidos na fila:</span>
-                    <span>{estatisticas.pedidos.pendentes + estatisticas.pedidos.preparando}</span>
-                  </div>
-                </div>
+                <ConfiguracaoPagamento />
               </CardContent>
             </Card>
-          </div>
-        </div>
+          </TabsContent>
+
+          <TabsContent value="configuracoes">
+            <div className="grid gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Configurações Gerais</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600">
+                    Outras configurações do restaurante serão adicionadas aqui.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );

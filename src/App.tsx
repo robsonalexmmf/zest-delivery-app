@@ -25,6 +25,7 @@ import RelatoriosPage from "./pages/Restaurante/RelatoriosPage";
 // Páginas do Entregador
 import DashboardEntregador from "./pages/Entregador/DashboardEntregador";
 import EntregasDisponiveisPage from "./pages/Entregador/EntregasDisponiveisPage";
+import ConfiguracaoEntregadorPage from "./pages/Entregador/ConfiguracaoEntregadorPage";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +56,7 @@ const App = () => (
           {/* Rotas do Entregador */}
           <Route path="/dashboard-entregador" element={<DashboardEntregador />} />
           <Route path="/entregas-disponiveis" element={<EntregasDisponiveisPage />} />
+          <Route path="/configuracao-entregador" element={<ConfiguracaoEntregadorPage />} />
           
           {/* Catch-all route */}
           <Route path="*" element={<NotFound />} />
