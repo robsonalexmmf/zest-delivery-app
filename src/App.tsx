@@ -14,12 +14,17 @@ import NotFound from "./pages/NotFound";
 import RestaurantesPage from "./pages/Cliente/RestaurantesPage";
 import RestauranteDetalhePage from "./pages/Cliente/RestauranteDetalhePage";
 import CarrinhoPage from "./pages/Cliente/CarrinhoPage";
+import MeusPedidosPage from "./pages/Cliente/MeusPedidosPage";
 
 // Páginas do Restaurante
 import DashboardRestaurante from "./pages/Restaurante/DashboardRestaurante";
+import ProdutosPage from "./pages/Restaurante/ProdutosPage";
+import PedidosRestaurantePage from "./pages/Restaurante/PedidosRestaurantePage";
+import RelatoriosPage from "./pages/Restaurante/RelatoriosPage";
 
 // Páginas do Entregador
 import DashboardEntregador from "./pages/Entregador/DashboardEntregador";
+import EntregasDisponiveisPage from "./pages/Entregador/EntregasDisponiveisPage";
 
 const queryClient = new QueryClient();
 
@@ -39,12 +44,17 @@ const App = () => (
           <Route path="/restaurantes" element={<RestaurantesPage />} />
           <Route path="/restaurante/:id" element={<RestauranteDetalhePage />} />
           <Route path="/carrinho" element={<CarrinhoPage />} />
+          <Route path="/meus-pedidos" element={<MeusPedidosPage />} />
           
           {/* Rotas do Restaurante */}
           <Route path="/dashboard-restaurante" element={<DashboardRestaurante />} />
+          <Route path="/produtos" element={<ProdutosPage />} />
+          <Route path="/pedidos-restaurante" element={<PedidosRestaurantePage />} />
+          <Route path="/relatorios" element={<RelatoriosPage />} />
           
           {/* Rotas do Entregador */}
           <Route path="/dashboard-entregador" element={<DashboardEntregador />} />
+          <Route path="/entregas-disponiveis" element={<EntregasDisponiveisPage />} />
           
           {/* Catch-all route */}
           <Route path="*" element={<NotFound />} />
