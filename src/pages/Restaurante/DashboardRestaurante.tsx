@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Layout/Header';
@@ -13,7 +14,8 @@ import {
   TrendingUp,
   Package,
   Settings,
-  CreditCard
+  CreditCard,
+  Star
 } from 'lucide-react';
 
 const DashboardRestaurante: React.FC = () => {
