@@ -46,6 +46,12 @@ const CarrinhoPage: React.FC = () => {
     if (carrinhoSalvo) {
       setCarrinho(JSON.parse(carrinhoSalvo));
     }
+
+    // Verificar se Mercado Pago está configurado
+    const mpConfig = localStorage.getItem('zdelivery_mercadopago_config');
+    if (!mpConfig) {
+      console.warn('Mercado Pago não configurado');
+    }
   }, [navigate]);
 
   const handleUpdateQuantity = (id: string, quantidade: number) => {
@@ -88,6 +94,19 @@ const CarrinhoPage: React.FC = () => {
         variant: 'destructive'
       });
       return;
+    }
+
+    // Verificar se método de pagamento está configurado
+    if (pagamento === 'pix') {
+      const mpConfig = localStorage.getItem('zdelivery_mercadopago_config');
+      if (!mpConfig || !JSON.parse(mpConfig).ativo) {
+        toast({
+          title: 'Pagamento PIX indisponível',
+          description: 'O sistema de pagamento PIX não está configurado. Tente o cartão.',
+          variant: 'destructive'
+        });
+        return;
+      }
     }
 
     // Gerar ID do pedido
@@ -258,7 +277,7 @@ const CarrinhoPage: React.FC = () => {
                           <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs mr-2">
                             PIX
                           </span>
-                          Pagamento instantâneo
+                          Pagamento instantâneo (Mercado Pago)
                         </Label>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -300,7 +319,7 @@ const CarrinhoPage: React.FC = () => {
                     className="w-full bg-red-600 hover:bg-red-700"
                     size="lg"
                   >
-                    {pagamento === 'pix' ? 'Pagar com PIX' : 'Pagar com Cartão'}
+                    {pagamento === 'pix' ? 'Pagar com PIX (Mercado Pago)' : 'Pagar com Cartão'}
                   </Button>
                 </CardContent>
               </Card>

@@ -4,8 +4,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Copy, Check, Clock, CreditCard } from 'lucide-react';
+import { Copy, Check, Clock, CreditCard, AlertCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { mercadoPagoService } from '@/services/mercadoPagoService';
+import type { PixPaymentResponse } from '@/services/mercadoPagoService';
 
 interface PagamentoPixProps {
   isOpen: boolean;
@@ -25,14 +27,18 @@ const PagamentoPix: React.FC<PagamentoPixProps> = ({
   const [pixCopiado, setPixCopiado] = useState(false);
   const [tempoRestante, setTempoRestante] = useState(600); // 10 minutos
   const [pagamentoProcessando, setPagamentoProcessando] = useState(false);
-
-  // Simular código PIX (normalmente viria da API de pagamento)
-  const codigoPix = `00020126580014br.gov.bcb.pix013636b5b6c4-e5d2-4c9a-9c7a-8f1234567890520400005303986540${valor.toFixed(2).replace('.', '')}5802BR5925ZDELIVERY LTDA6009SAO PAULO62070503***630445A2`;
-  
-  const qrCodeData = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==`; // Placeholder QR Code
+  const [pixData, setPixData] = useState<PixPaymentResponse | null>(null);
+  const [carregandoPix, setCarregandoPix] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (isOpen && !pixData) {
+      criarPagamentoPix();
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !pixData) return;
 
     const timer = setInterval(() => {
       setTempoRestante(prev => {
@@ -50,8 +56,61 @@ const PagamentoPix: React.FC<PagamentoPixProps> = ({
       });
     }, 1000);
 
-    return () => clearInterval(timer);
-  }, [isOpen, onClose]);
+    // Verificar status do pagamento periodicamente
+    const statusChecker = setInterval(async () => {
+      if (pixData?.id) {
+        try {
+          const status = await mercadoPagoService.checkPaymentStatus(pixData.id);
+          if (status === 'approved') {
+            clearInterval(statusChecker);
+            clearInterval(timer);
+            onPagamentoConfirmado();
+            onClose();
+            toast({
+              title: 'Pagamento confirmado!',
+              description: 'Seu pedido foi recebido pelo restaurante.',
+            });
+          }
+        } catch (error) {
+          console.error('Erro ao verificar status:', error);
+        }
+      }
+    }, 5000);
+
+    return () => {
+      clearInterval(timer);
+      clearInterval(statusChecker);
+    };
+  }, [isOpen, pixData, onClose, onPagamentoConfirmado]);
+
+  const criarPagamentoPix = async () => {
+    setCarregandoPix(true);
+    setErro(null);
+
+    try {
+      if (!mercadoPagoService.isConfigured()) {
+        throw new Error('Sistema de pagamento não configurado. Configure as credenciais do Mercado Pago.');
+      }
+
+      const pixResponse = await mercadoPagoService.createPixPayment({
+        amount: valor,
+        description: `Pedido ${pedidoId} - ZDelivery`,
+        orderId: pedidoId
+      });
+
+      setPixData(pixResponse);
+    } catch (error) {
+      console.error('Erro ao criar PIX:', error);
+      setErro(error instanceof Error ? error.message : 'Erro ao gerar código PIX');
+      toast({
+        title: 'Erro ao criar PIX',
+        description: 'Não foi possível gerar o código PIX. Tente novamente.',
+        variant: 'destructive'
+      });
+    } finally {
+      setCarregandoPix(false);
+    }
+  };
 
   const formatarTempo = (segundos: number) => {
     const mins = Math.floor(segundos / 60);
@@ -60,8 +119,10 @@ const PagamentoPix: React.FC<PagamentoPixProps> = ({
   };
 
   const handleCopiarPix = async () => {
+    if (!pixData?.pixCopyPaste) return;
+
     try {
-      await navigator.clipboard.writeText(codigoPix);
+      await navigator.clipboard.writeText(pixData.pixCopyPaste);
       setPixCopiado(true);
       toast({
         title: 'Código PIX copiado!',
@@ -86,7 +147,6 @@ const PagamentoPix: React.FC<PagamentoPixProps> = ({
       description: 'Aguarde enquanto confirmamos o pagamento.',
     });
 
-    // Simular tempo de processamento
     setTimeout(() => {
       setPagamentoProcessando(false);
       onPagamentoConfirmado();
@@ -118,61 +178,101 @@ const PagamentoPix: React.FC<PagamentoPixProps> = ({
             <div className="text-sm text-gray-600">
               Pedido {pedidoId}
             </div>
-            <div className="flex items-center justify-center space-x-2">
-              <Clock className="w-4 h-4 text-orange-500" />
-              <span className="text-sm font-medium text-orange-600">
-                Tempo restante: {formatarTempo(tempoRestante)}
-              </span>
-            </div>
+            {pixData && (
+              <div className="flex items-center justify-center space-x-2">
+                <Clock className="w-4 h-4 text-orange-500" />
+                <span className="text-sm font-medium text-orange-600">
+                  Tempo restante: {formatarTempo(tempoRestante)}
+                </span>
+              </div>
+            )}
           </div>
 
-          {/* QR Code */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-center space-y-4">
-                <div className="bg-white p-4 rounded-lg border-2 border-dashed border-gray-300">
-                  <div className="w-32 h-32 mx-auto bg-gray-100 rounded-lg flex items-center justify-center">
-                    <span className="text-gray-500 text-xs">QR Code PIX</span>
-                  </div>
-                </div>
-                <p className="text-sm text-gray-600">
-                  Escaneie com seu app de pagamentos
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Código PIX para Copiar */}
-          <div className="space-y-3">
-            <div className="text-sm font-medium text-gray-700">
-              Ou copie o código PIX:
+          {/* Estado de Carregamento ou Erro */}
+          {carregandoPix && (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
+              <p className="text-sm text-gray-600">Gerando código PIX...</p>
             </div>
-            
-            <div className="bg-gray-50 p-3 rounded-lg border">
-              <div className="font-mono text-xs text-gray-700 break-all mb-3">
-                {codigoPix.substring(0, 50)}...
+          )}
+
+          {erro && (
+            <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+              <div className="flex items-center space-x-2">
+                <AlertCircle className="w-5 h-5 text-red-600" />
+                <span className="text-sm text-red-800">{erro}</span>
               </div>
-              
               <Button
-                onClick={handleCopiarPix}
+                onClick={criarPagamentoPix}
                 variant="outline"
-                className="w-full"
-                disabled={pixCopiado}
+                size="sm"
+                className="mt-3"
               >
-                {pixCopiado ? (
-                  <>
-                    <Check className="w-4 h-4 mr-2 text-green-600" />
-                    Copiado!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-4 h-4 mr-2" />
-                    Copiar código PIX
-                  </>
-                )}
+                Tentar Novamente
               </Button>
             </div>
-          </div>
+          )}
+
+          {/* QR Code e Código PIX */}
+          {pixData && (
+            <>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="text-center space-y-4">
+                    {pixData.qrCodeBase64 ? (
+                      <div className="bg-white p-4 rounded-lg border-2 border-dashed border-gray-300">
+                        <img
+                          src={`data:image/png;base64,${pixData.qrCodeBase64}`}
+                          alt="QR Code PIX"
+                          className="w-32 h-32 mx-auto"
+                        />
+                      </div>
+                    ) : (
+                      <div className="bg-white p-4 rounded-lg border-2 border-dashed border-gray-300">
+                        <div className="w-32 h-32 mx-auto bg-gray-100 rounded-lg flex items-center justify-center">
+                          <span className="text-gray-500 text-xs">QR Code PIX</span>
+                        </div>
+                      </div>
+                    )}
+                    <p className="text-sm text-gray-600">
+                      Escaneie com seu app de pagamentos
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="space-y-3">
+                <div className="text-sm font-medium text-gray-700">
+                  Ou copie o código PIX:
+                </div>
+                
+                <div className="bg-gray-50 p-3 rounded-lg border">
+                  <div className="font-mono text-xs text-gray-700 break-all mb-3">
+                    {pixData.pixCopyPaste.substring(0, 50)}...
+                  </div>
+                  
+                  <Button
+                    onClick={handleCopiarPix}
+                    variant="outline"
+                    className="w-full"
+                    disabled={pixCopiado}
+                  >
+                    {pixCopiado ? (
+                      <>
+                        <Check className="w-4 h-4 mr-2 text-green-600" />
+                        Copiado!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4 mr-2" />
+                        Copiar código PIX
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Instruções */}
           <div className="bg-blue-50 p-4 rounded-lg">
@@ -181,7 +281,7 @@ const PagamentoPix: React.FC<PagamentoPixProps> = ({
               <li>1. Abra seu app de pagamentos</li>
               <li>2. Escaneie o QR Code ou cole o código PIX</li>
               <li>3. Confirme o pagamento</li>
-              <li>4. Aguarde a confirmação automática</li>
+              <li>4. O pagamento será confirmado automaticamente</li>
             </ol>
           </div>
 
@@ -190,7 +290,7 @@ const PagamentoPix: React.FC<PagamentoPixProps> = ({
             {/* Botão para simular pagamento (apenas para demo) */}
             <Button
               onClick={handleSimularPagamento}
-              disabled={pagamentoProcessando}
+              disabled={pagamentoProcessando || !pixData}
               className="w-full bg-green-600 hover:bg-green-700"
             >
               {pagamentoProcessando ? 'Processando...' : 'Simular Pagamento (Demo)'}
@@ -211,7 +311,7 @@ const PagamentoPix: React.FC<PagamentoPixProps> = ({
             <Badge variant="outline" className="text-green-600 border-green-600">
               🔒 Pagamento Seguro
             </Badge>
-            <span>Powered by PIX</span>
+            <span>Powered by Mercado Pago</span>
           </div>
         </div>
       </DialogContent>
