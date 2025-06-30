@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Layout/Header';
@@ -8,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Clock, MapPin, Phone, Package } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { menuAiService } from '@/services/menuAiService';
 
 const PedidosRestaurantePage: React.FC = () => {
   const [user, setUser] = useState<any>(null);
@@ -28,13 +28,13 @@ const PedidosRestaurantePage: React.FC = () => {
     }
   }, [navigate]);
 
-  // Dados mockados de pedidos
+  // Dados mockados de pedidos com telefone do cliente
   const [pedidos, setPedidos] = useState([
     {
       id: '#001',
       cliente: {
         nome: 'João Silva',
-        telefone: '(11) 99999-9999',
+        telefone: '5511999999999',
         endereco: 'Rua das Flores, 123 - Centro'
       },
       produtos: [
@@ -51,7 +51,7 @@ const PedidosRestaurantePage: React.FC = () => {
       id: '#002',
       cliente: {
         nome: 'Maria Santos',
-        telefone: '(11) 88888-8888',
+        telefone: '5511888888888',
         endereco: 'Av. Paulista, 456 - Apto 102'
       },
       produtos: [
@@ -67,7 +67,7 @@ const PedidosRestaurantePage: React.FC = () => {
       id: '#003',
       cliente: {
         nome: 'Carlos Oliveira',
-        telefone: '(11) 77777-7777',
+        telefone: '5511777777777',
         endereco: 'Rua do Centro, 789'
       },
       produtos: [
@@ -94,7 +94,9 @@ const PedidosRestaurantePage: React.FC = () => {
     return statusMap[status as keyof typeof statusMap] || statusMap.recebido;
   };
 
-  const handleStatusChange = (pedidoId: string, novoStatus: string) => {
+  const handleStatusChange = async (pedidoId: string, novoStatus: string) => {
+    const pedido = pedidos.find(p => p.id === pedidoId);
+    
     setPedidos(pedidos.map(pedido => 
       pedido.id === pedidoId ? { ...pedido, status: novoStatus } : pedido
     ));
@@ -103,6 +105,25 @@ const PedidosRestaurantePage: React.FC = () => {
       title: 'Status atualizado!',
       description: `Pedido ${pedidoId} foi atualizado para ${getStatusBadge(novoStatus).label}.`,
     });
+
+    // Enviar notificação WhatsApp
+    if (pedido && menuAiService.isConfigured()) {
+      try {
+        await menuAiService.sendStatusMessage(
+          pedido.cliente.telefone,
+          pedidoId,
+          novoStatus,
+          user?.nome || 'Restaurante'
+        );
+        
+        toast({
+          title: 'WhatsApp enviado!',
+          description: `Notificação enviada para ${pedido.cliente.nome}.`,
+        });
+      } catch (error) {
+        console.error('Erro ao enviar WhatsApp:', error);
+      }
+    }
   };
 
   const pedidosFiltrados = filtroStatus === 'todos' 
