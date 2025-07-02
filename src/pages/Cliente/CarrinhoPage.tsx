@@ -5,11 +5,13 @@ import Header from '@/components/Layout/Header';
 import CarrinhoItem from '@/components/Cliente/CarrinhoItem';
 import PagamentoPix from '@/components/Pagamento/PagamentoPix';
 import AplicadorCupom from '@/components/Cliente/AplicadorCupom';
+import GerenciadorEnderecos from '@/components/Cliente/GerenciadorEnderecos';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
+import { MapPin, Edit } from 'lucide-react';
 import { restaurantes } from '@/data/mockData';
 import { toast } from '@/hooks/use-toast';
 
@@ -20,11 +22,25 @@ interface CupomAplicado {
   valor: number;
 }
 
+interface Endereco {
+  id: string;
+  nome: string;
+  endereco: string;
+  numero: string;
+  complemento?: string;
+  bairro: string;
+  cidade: string;
+  cep: string;
+  referencia?: string;
+  principal: boolean;
+}
+
 const CarrinhoPage: React.FC = () => {
   const [user, setUser] = useState<any>(null);
   const [carrinho, setCarrinho] = useState<any[]>([]);
-  const [endereco, setEndereco] = useState('');
-  const [pagamento, setPagamento] = useState<'pix' | 'cartao'>('pix');
+  const [enderecoSelecionado, setEnderecoSelecionado] = useState<Endereco | null>(null);
+  const [showGerenciadorEnderecos, setShowGerenciadorEnderecos] = useState(false);
+  const [pagamento, setPagamento] = useState<'pix' | 'cartao' | 'dinheiro'>('pix');
   const [observacoes, setObservacoes] = useState('');
   const [cupomAplicado, setCupomAplicado] = useState<CupomAplicado | null>(null);
   const [showPixModal, setShowPixModal] = useState(false);
@@ -36,7 +52,7 @@ const CarrinhoPage: React.FC = () => {
     if (userData) {
       const user = JSON.parse(userData);
       setUser(user);
-      setEndereco(user.endereco || '');
+      carregarEnderecoSalvo();
     } else {
       navigate('/login');
     }
@@ -46,13 +62,18 @@ const CarrinhoPage: React.FC = () => {
     if (carrinhoSalvo) {
       setCarrinho(JSON.parse(carrinhoSalvo));
     }
-
-    // Verificar se Mercado Pago está configurado
-    const mpConfig = localStorage.getItem('zdelivery_mercadopago_config');
-    if (!mpConfig) {
-      console.warn('Mercado Pago não configurado');
-    }
   }, [navigate]);
+
+  const carregarEnderecoSalvo = () => {
+    const endercosSalvos = localStorage.getItem('zdelivery_enderecos');
+    if (endercosSalvos) {
+      const enderecos = JSON.parse(endercosSalvos);
+      const principal = enderecos.find((e: Endereco) => e.principal);
+      if (principal) {
+        setEnderecoSelecionado(principal);
+      }
+    }
+  };
 
   const handleUpdateQuantity = (id: string, quantidade: number) => {
     const novoCarrinho = carrinho.map(item => 
@@ -77,11 +98,23 @@ const CarrinhoPage: React.FC = () => {
     setCupomAplicado(cupom);
   };
 
+  const handleEnderecoSelecionado = (endereco: Endereco) => {
+    setEnderecoSelecionado(endereco);
+    toast({
+      title: 'Endereço selecionado!',
+      description: `Endereço "${endereco.nome}" selecionado para entrega.`,
+    });
+  };
+
+  const formatarEnderecoCompleto = (endereco: Endereco) => {
+    return `${endereco.endereco}, ${endereco.numero}${endereco.complemento ? `, ${endereco.complemento}` : ''} - ${endereco.bairro}, ${endereco.cidade} - ${endereco.cep}`;
+  };
+
   const handleFinalizarPedido = () => {
-    if (!endereco.trim()) {
+    if (!enderecoSelecionado) {
       toast({
         title: 'Endereço obrigatório',
-        description: 'Por favor, informe o endereço de entrega.',
+        description: 'Por favor, selecione um endereço de entrega.',
         variant: 'destructive'
       });
       return;
@@ -102,7 +135,7 @@ const CarrinhoPage: React.FC = () => {
       if (!mpConfig || !JSON.parse(mpConfig).ativo) {
         toast({
           title: 'Pagamento PIX indisponível',
-          description: 'O sistema de pagamento PIX não está configurado. Tente o cartão.',
+          description: 'O sistema de pagamento PIX não está configurado. Tente outro método.',
           variant: 'destructive'
         });
         return;
@@ -117,21 +150,17 @@ const CarrinhoPage: React.FC = () => {
     if (pagamento === 'pix') {
       setShowPixModal(true);
     } else {
-      // Simular pagamento com cartão
-      finalizarPedidoComCartao(novoIdPedido);
+      // Simular outros métodos de pagamento
+      if (pagamento === 'cartao') {
+        toast({
+          title: 'Processando pagamento...',
+          description: 'Aguarde enquanto processamos seu cartão.',
+        });
+        setTimeout(() => confirmarPedido(novoIdPedido), 3000);
+      } else {
+        confirmarPedido(novoIdPedido);
+      }
     }
-  };
-
-  const finalizarPedidoComCartao = (id: string) => {
-    // Simular processamento do cartão
-    toast({
-      title: 'Processando pagamento...',
-      description: 'Aguarde enquanto processamos seu cartão.',
-    });
-
-    setTimeout(() => {
-      confirmarPedido(id);
-    }, 3000);
   };
 
   const confirmarPedido = (id: string) => {
@@ -139,7 +168,7 @@ const CarrinhoPage: React.FC = () => {
     const pedido = {
       id,
       produtos: carrinho,
-      endereco,
+      endereco: formatarEnderecoCompleto(enderecoSelecionado!),
       pagamento,
       observacoes,
       cupom: cupomAplicado,
@@ -222,33 +251,64 @@ const CarrinhoPage: React.FC = () => {
                 </CardContent>
               </Card>
 
-              {/* Endereço e Observações */}
+              {/* Endereço */}
               <Card className="mt-6">
                 <CardHeader>
-                  <CardTitle>Dados da Entrega</CardTitle>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>Endereço de Entrega</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowGerenciadorEnderecos(true)}
+                    >
+                      <Edit className="w-4 h-4 mr-2" />
+                      {enderecoSelecionado ? 'Alterar' : 'Adicionar'}
+                    </Button>
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="endereco">Endereço de Entrega</Label>
-                    <Textarea
-                      id="endereco"
-                      value={endereco}
-                      onChange={(e) => setEndereco(e.target.value)}
-                      placeholder="Rua, número, bairro, cidade..."
-                      rows={3}
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="observacoes">Observações (opcional)</Label>
-                    <Textarea
-                      id="observacoes"
-                      value={observacoes}
-                      onChange={(e) => setObservacoes(e.target.value)}
-                      placeholder="Alguma observação para o pedido..."
-                      rows={2}
-                    />
-                  </div>
+                <CardContent>
+                  {enderecoSelecionado ? (
+                    <div className="bg-green-50 p-4 rounded-lg">
+                      <div className="flex items-center mb-2">
+                        <MapPin className="w-4 h-4 text-green-600 mr-2" />
+                        <span className="font-medium text-green-800">{enderecoSelecionado.nome}</span>
+                      </div>
+                      <p className="text-sm text-gray-700">
+                        {formatarEnderecoCompleto(enderecoSelecionado)}
+                      </p>
+                      {enderecoSelecionado.referencia && (
+                        <p className="text-xs text-gray-600 mt-1">
+                          Referência: {enderecoSelecionado.referencia}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                      <MapPin className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-gray-500">Nenhum endereço selecionado</p>
+                      <Button
+                        onClick={() => setShowGerenciadorEnderecos(true)}
+                        className="mt-2 bg-red-600 hover:bg-red-700"
+                      >
+                        Adicionar Endereço
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Observações */}
+              <Card className="mt-6">
+                <CardHeader>
+                  <CardTitle>Observações</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Textarea
+                    value={observacoes}
+                    onChange={(e) => setObservacoes(e.target.value)}
+                    placeholder="Alguma observação para o pedido..."
+                    rows={3}
+                  />
                 </CardContent>
               </Card>
             </div>
@@ -277,7 +337,7 @@ const CarrinhoPage: React.FC = () => {
                           <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs mr-2">
                             PIX
                           </span>
-                          Pagamento instantâneo (Mercado Pago)
+                          Pagamento instantâneo
                         </Label>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -286,7 +346,16 @@ const CarrinhoPage: React.FC = () => {
                           <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs mr-2">
                             Cartão
                           </span>
-                          Cartão de Crédito
+                          Cartão de Crédito/Débito
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="dinheiro" id="dinheiro" />
+                        <Label htmlFor="dinheiro" className="flex items-center cursor-pointer">
+                          <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs mr-2">
+                            Dinheiro
+                          </span>
+                          Dinheiro na entrega
                         </Label>
                       </div>
                     </RadioGroup>
@@ -318,8 +387,9 @@ const CarrinhoPage: React.FC = () => {
                     onClick={handleFinalizarPedido}
                     className="w-full bg-red-600 hover:bg-red-700"
                     size="lg"
+                    disabled={!enderecoSelecionado}
                   >
-                    {pagamento === 'pix' ? 'Pagar com PIX (Mercado Pago)' : 'Pagar com Cartão'}
+                    Finalizar Pedido
                   </Button>
                 </CardContent>
               </Card>
@@ -328,7 +398,14 @@ const CarrinhoPage: React.FC = () => {
         )}
       </main>
 
-      {/* Modal de Pagamento PIX */}
+      {/* Modals */}
+      <GerenciadorEnderecos
+        isOpen={showGerenciadorEnderecos}
+        onClose={() => setShowGerenciadorEnderecos(false)}
+        onEnderecoSelecionado={handleEnderecoSelecionado}
+        enderecoAtual={enderecoSelecionado ? formatarEnderecoCompleto(enderecoSelecionado) : ''}
+      />
+
       <PagamentoPix
         isOpen={showPixModal}
         onClose={() => setShowPixModal(false)}
