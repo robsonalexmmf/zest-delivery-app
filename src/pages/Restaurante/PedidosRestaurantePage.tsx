@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Layout/Header';
@@ -6,40 +7,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { 
   Package, 
   Clock, 
-  CheckCircle, 
-  XCircle, 
-  Phone, 
-  MessageSquare,
-  Filter,
-  Download,
-  Search,
-  Calendar,
   Eye,
-  User,
-  MapPin,
-  DollarSign
+  Bell
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-
-interface Pedido {
-  id: string;
-  cliente: string;
-  endereco: string;
-  itens: { nome: string; quantidade: number }[];
-  total: number;
-  status: 'pendente' | 'em_preparo' | 'saiu_para_entrega' | 'entregue' | 'cancelado';
-  data: string;
-  hora: string;
-  entregador?: string;
-  observacoes?: string;
-  metodoPagamento: 'dinheiro' | 'cartao' | 'pix';
-}
+import { pedidosService, Pedido } from '@/services/pedidosService';
 
 const PedidosRestaurantePage: React.FC = () => {
   const [user, setUser] = useState<any>(null);
@@ -52,6 +30,7 @@ const PedidosRestaurantePage: React.FC = () => {
   const [pedidoSelecionado, setPedidoSelecionado] = useState<Pedido | null>(null);
   const [detalhesAberto, setDetalhesAberto] = useState<boolean>(false);
   const [observacoes, setObservacoes] = useState<string>('');
+  const [novosPedidos, setNovosPedidos] = useState<number>(0);
 
   useEffect(() => {
     const userData = localStorage.getItem('zdelivery_user');
@@ -61,79 +40,50 @@ const PedidosRestaurantePage: React.FC = () => {
         navigate('/login');
       } else {
         setUser(parsedUser);
-        carregarPedidos();
       }
     } else {
       navigate('/login');
     }
   }, [navigate]);
 
-  const carregarPedidos = () => {
-    // Simulação de dados de pedidos (substitua por sua lógica real)
-    const pedidosMock: Pedido[] = [
-      {
-        id: '1',
-        cliente: 'João Silva',
-        endereco: 'Rua A, 123 - Centro',
-        itens: [{ nome: 'Pizza Calabresa', quantidade: 1 }, { nome: 'Coca-Cola', quantidade: 2 }],
-        total: 45.50,
-        status: 'pendente',
-        data: '2024-08-01',
-        hora: '19:30',
-        metodoPagamento: 'dinheiro',
-        observacoes: 'Sem cebola, por favor.'
-      },
-      {
-        id: '2',
-        cliente: 'Maria Souza',
-        endereco: 'Av. B, 456 - Jardim',
-        itens: [{ nome: 'Hamburguer', quantidade: 2 }, { nome: 'Batata Frita', quantidade: 1 }],
-        total: 32.00,
-        status: 'em_preparo',
-        data: '2024-08-01',
-        hora: '20:00',
-        metodoPagamento: 'cartao',
-        entregador: 'Carlos',
-        observacoes: 'Adicionar maionese extra.'
-      },
-      {
-        id: '3',
-        cliente: 'Ana Paula',
-        endereco: 'Rua C, 789 - Vila Nova',
-        itens: [{ nome: 'Sushi', quantidade: 10 }],
-        total: 68.00,
-        status: 'saiu_para_entrega',
-        data: '2024-08-01',
-        hora: '20:15',
-        metodoPagamento: 'pix',
-        entregador: 'Pedro'
-      },
-      {
-        id: '4',
-        cliente: 'Ricardo Oliveira',
-        endereco: 'Av. D, 1011 - Bela Vista',
-        itens: [{ nome: 'Pizza Margherita', quantidade: 1 }, { nome: 'Suco de Laranja', quantidade: 1 }],
-        total: 40.00,
-        status: 'entregue',
-        data: '2024-08-01',
-        hora: '20:30',
-        metodoPagamento: 'dinheiro'
-      },
-      {
-        id: '5',
-        cliente: 'Fernanda Costa',
-        endereco: 'Rua E, 1213 - Floresta',
-        itens: [{ nome: 'Salada', quantidade: 1 }],
-        total: 25.00,
-        status: 'cancelado',
-        data: '2024-08-01',
-        hora: '20:45',
-        metodoPagamento: 'cartao',
-        observacoes: 'Pedido cancelado pelo cliente.'
-      },
-    ];
-    setPedidos(pedidosMock);
-  };
+  useEffect(() => {
+    if (!user) return;
+
+    const unsubscribe = pedidosService.subscribe((todosPedidos) => {
+      const pedidosRestaurante = pedidosService.getPedidosPorRestaurante(user.nome);
+      
+      // Detectar novos pedidos pendentes
+      const pedidosPendentes = pedidosRestaurante.filter(p => p.status === 'pendente');
+      const pedidosPendentesAnteriores = pedidos.filter(p => p.status === 'pendente');
+      
+      if (pedidosPendentes.length > pedidosPendentesAnteriores.length) {
+        const novosPedidosCount = pedidosPendentes.length - pedidosPendentesAnteriores.length;
+        setNovosPedidos(novosPedidosCount);
+        
+        toast({
+          title: '🔔 Novo Pedido Recebido!',
+          description: `Você tem ${novosPedidosCount} novo(s) pedido(s) pendente(s).`,
+        });
+
+        // Tocar som de notificação (opcional)
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('Novo Pedido ZDelivery', {
+            body: `Novo pedido de ${pedidosPendentes[pedidosPendentes.length - 1].cliente.nome}`,
+            icon: '/favicon.ico'
+          });
+        }
+      }
+      
+      setPedidos(pedidosRestaurante);
+    });
+
+    // Solicitar permissão para notificações
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
+    return unsubscribe;
+  }, [user, pedidos]);
 
   const filtrarPedidos = () => {
     let pedidosFiltrados = pedidos;
@@ -145,8 +95,8 @@ const PedidosRestaurantePage: React.FC = () => {
     if (termoBusca) {
       const termo = termoBusca.toLowerCase();
       pedidosFiltrados = pedidosFiltrados.filter(pedido =>
-        pedido.cliente.toLowerCase().includes(termo) ||
-        pedido.endereco.toLowerCase().includes(termo) ||
+        pedido.cliente.nome.toLowerCase().includes(termo) ||
+        pedido.cliente.endereco.toLowerCase().includes(termo) ||
         pedido.id.includes(termo)
       );
     }
@@ -164,25 +114,37 @@ const PedidosRestaurantePage: React.FC = () => {
   };
 
   const handleStatusChange = (id: string, novoStatus: Pedido['status']) => {
-    setPedidos(pedidos.map(pedido =>
-      pedido.id === id ? { ...pedido, status: novoStatus } : pedido
-    ));
-    toast({
-      title: 'Status do pedido atualizado!',
-      description: `O pedido ${id} foi atualizado para ${novoStatus}.`,
-    });
-  };
+    pedidosService.atualizarStatusPedido(id, novoStatus);
+    
+    let mensagem = '';
+    switch (novoStatus) {
+      case 'em_preparo':
+        mensagem = 'Pedido está sendo preparado';
+        break;
+      case 'pronto':
+        mensagem = 'Pedido está pronto para entrega';
+        break;
+      case 'cancelado':
+        mensagem = 'Pedido foi cancelado';
+        break;
+      default:
+        mensagem = `Status atualizado para ${novoStatus}`;
+    }
 
-  const handleObservacoesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setObservacoes(e.target.value);
+    toast({
+      title: 'Status Atualizado!',
+      description: mensagem,
+    });
+
+    // Limpar contador de novos pedidos quando aceitar
+    if (novoStatus === 'em_preparo') {
+      setNovosPedidos(0);
+    }
   };
 
   const salvarObservacoes = () => {
     if (pedidoSelecionado) {
-      setPedidos(pedidos.map(pedido =>
-        pedido.id === pedidoSelecionado.id ? { ...pedido, observacoes: observacoes } : pedido
-      ));
-      setPedidoSelecionado({ ...pedidoSelecionado, observacoes: observacoes });
+      // Aqui você pode implementar a lógica para salvar observações
       toast({
         title: 'Observações salvas!',
         description: 'As observações do pedido foram atualizadas.',
@@ -200,17 +162,65 @@ const PedidosRestaurantePage: React.FC = () => {
 
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">
-            Pedidos do Restaurante
-          </h1>
-          <p className="text-gray-600">
-            Acompanhe e gerencie os pedidos do seu restaurante
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-800 mb-2">
+                Pedidos do Restaurante
+              </h1>
+              <p className="text-gray-600">
+                Acompanhe e gerencie os pedidos do seu restaurante
+              </p>
+            </div>
+            
+            {novosPedidos > 0 && (
+              <div className="flex items-center space-x-2 bg-red-100 text-red-800 px-4 py-2 rounded-lg">
+                <Bell className="w-5 h-5" />
+                <span className="font-medium">
+                  {novosPedidos} novo(s) pedido(s)!
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Estatísticas Rápidas */}
+        <div className="grid md:grid-cols-4 gap-4 mb-6">
+          <Card>
+            <CardContent className="p-4 text-center">
+              <div className="text-2xl font-bold text-yellow-600">
+                {pedidos.filter(p => p.status === 'pendente').length}
+              </div>
+              <p className="text-sm text-gray-600">Pendentes</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 text-center">
+              <div className="text-2xl font-bold text-blue-600">
+                {pedidos.filter(p => p.status === 'em_preparo').length}
+              </div>
+              <p className="text-sm text-gray-600">Em Preparo</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 text-center">
+              <div className="text-2xl font-bold text-purple-600">
+                {pedidos.filter(p => p.status === 'pronto').length}
+              </div>
+              <p className="text-sm text-gray-600">Prontos</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 text-center">
+              <div className="text-2xl font-bold text-green-600">
+                {pedidos.filter(p => p.status === 'entregue').length}
+              </div>
+              <p className="text-sm text-gray-600">Entregues</p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Filtros e Busca */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          {/* Filtro por Status */}
           <div>
             <Label htmlFor="filtro-status">Filtrar por Status:</Label>
             <Select value={filtroStatus} onValueChange={setFiltroStatus}>
@@ -220,6 +230,7 @@ const PedidosRestaurantePage: React.FC = () => {
               <SelectContent>
                 <SelectItem value="pendente">Pendentes</SelectItem>
                 <SelectItem value="em_preparo">Em Preparo</SelectItem>
+                <SelectItem value="pronto">Prontos</SelectItem>
                 <SelectItem value="saiu_para_entrega">Saiu para Entrega</SelectItem>
                 <SelectItem value="entregue">Entregues</SelectItem>
                 <SelectItem value="cancelado">Cancelados</SelectItem>
@@ -227,22 +238,17 @@ const PedidosRestaurantePage: React.FC = () => {
             </Select>
           </div>
 
-          {/* Busca por Termo */}
           <div>
             <Label htmlFor="busca">Buscar:</Label>
-            <div className="relative">
-              <Input
-                id="busca"
-                type="search"
-                placeholder="Buscar por cliente, endereço ou #ID"
-                value={termoBusca}
-                onChange={(e) => setTermoBusca(e.target.value)}
-              />
-              <Search className="absolute top-2.5 right-3 w-5 h-5 text-gray-500" />
-            </div>
+            <Input
+              id="busca"
+              type="search"
+              placeholder="Cliente, endereço ou #ID"
+              value={termoBusca}
+              onChange={(e) => setTermoBusca(e.target.value)}
+            />
           </div>
 
-          {/* Filtro por Data */}
           <div>
             <Label htmlFor="data-inicio">Data Início:</Label>
             <Input
@@ -267,62 +273,70 @@ const PedidosRestaurantePage: React.FC = () => {
         <div className="grid grid-cols-1 gap-4">
           {pedidosFiltrados.length > 0 ? (
             pedidosFiltrados.map((pedido) => (
-              <Card key={pedido.id} className="border">
+              <Card key={pedido.id} className={`border ${pedido.status === 'pendente' && novosPedidos > 0 ? 'border-red-300 bg-red-50' : ''}`}>
                 <CardHeader className="flex items-center justify-between">
                   <CardTitle>
                     <div className="flex items-center">
                       <Package className="w-5 h-5 mr-2" />
-                      Pedido #{pedido.id} - {pedido.cliente}
+                      Pedido #{pedido.id} - {pedido.cliente.nome}
                     </div>
                   </CardTitle>
-                  <Badge variant="secondary">{pedido.metodoPagamento}</Badge>
+                  <div className="flex items-center space-x-2">
+                    <Badge variant="secondary">{pedido.metodoPagamento}</Badge>
+                    <Badge
+                      className={
+                        pedido.status === 'pendente'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : pedido.status === 'em_preparo'
+                          ? 'bg-blue-100 text-blue-800'
+                          : pedido.status === 'pronto'
+                          ? 'bg-purple-100 text-purple-800'
+                          : pedido.status === 'saiu_para_entrega'
+                          ? 'bg-orange-100 text-orange-800'
+                          : pedido.status === 'entregue'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }
+                    >
+                      {pedido.status === 'pendente' ? 'Pendente' :
+                       pedido.status === 'em_preparo' ? 'Em Preparo' :
+                       pedido.status === 'pronto' ? 'Pronto' :
+                       pedido.status === 'saiu_para_entrega' ? 'Saiu para Entrega' :
+                       pedido.status === 'entregue' ? 'Entregue' : 'Cancelado'}
+                    </Badge>
+                  </div>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
+                    <strong>Cliente:</strong>
+                    <p>{pedido.cliente.nome}</p>
+                    <p className="text-sm text-gray-600">{pedido.cliente.telefone}</p>
+                  </div>
+                  <div>
                     <strong>Endereço:</strong>
-                    <p>{pedido.endereco}</p>
+                    <p>{pedido.cliente.endereco}</p>
                   </div>
                   <div>
                     <strong>Data/Hora:</strong>
                     <p>{pedido.data} - {pedido.hora}</p>
-                  </div>
-                  <div>
                     <strong>Total:</strong>
-                    <p>R$ {pedido.total.toFixed(2)}</p>
+                    <p className="text-green-600 font-bold">R$ {pedido.total.toFixed(2)}</p>
                   </div>
 
                   <div className="md:col-span-3">
                     <strong>Itens:</strong>
-                    <ul>
+                    <ul className="mt-1">
                       {pedido.itens.map((item, index) => (
-                        <li key={index}>
-                          {item.quantidade}x {item.nome}
+                        <li key={index} className="flex justify-between">
+                          <span>{item.quantidade}x {item.nome}</span>
+                          <span>R$ {(item.preco * item.quantidade).toFixed(2)}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
 
-                  <div className="md:col-span-3 flex justify-between items-center">
-                    <div>
-                      <strong>Status:</strong>
-                      <Badge
-                        className={
-                          pedido.status === 'pendente'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : pedido.status === 'em_preparo'
-                            ? 'bg-blue-100 text-blue-800'
-                            : pedido.status === 'saiu_para_entrega'
-                            ? 'bg-purple-100 text-purple-800'
-                            : pedido.status === 'entregue'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
-                        }
-                      >
-                        {pedido.status}
-                      </Badge>
-                    </div>
-
-                    <div className="space-x-2">
+                  <div className="md:col-span-3 flex justify-between items-center flex-wrap gap-2">
+                    <div className="flex items-center space-x-2">
                       <Button
                         variant="outline"
                         size="sm"
@@ -335,22 +349,38 @@ const PedidosRestaurantePage: React.FC = () => {
                         <Eye className="w-4 h-4 mr-2" />
                         Detalhes
                       </Button>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      {pedido.status === 'pendente' && (
+                        <Button
+                          size="sm"
+                          className="bg-blue-600 hover:bg-blue-700"
+                          onClick={() => handleStatusChange(pedido.id, 'em_preparo')}
+                        >
+                          Aceitar Pedido
+                        </Button>
+                      )}
                       
-                      <Select
-                        value={pedido.status}
-                        onValueChange={(value: any) => handleStatusChange(pedido.id, value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pendente">Pendente</SelectItem>
-                          <SelectItem value="em_preparo">Em Preparo</SelectItem>
-                          <SelectItem value="saiu_para_entrega">Saiu para Entrega</SelectItem>
-                          <SelectItem value="entregue">Entregue</SelectItem>
-                          <SelectItem value="cancelado">Cancelado</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      {pedido.status === 'em_preparo' && (
+                        <Button
+                          size="sm"
+                          className="bg-purple-600 hover:bg-purple-700"
+                          onClick={() => handleStatusChange(pedido.id, 'pronto')}
+                        >
+                          Marcar como Pronto
+                        </Button>
+                      )}
+                      
+                      {pedido.status !== 'entregue' && pedido.status !== 'cancelado' && (
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleStatusChange(pedido.id, 'cancelado')}
+                        >
+                          Cancelar
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -358,7 +388,8 @@ const PedidosRestaurantePage: React.FC = () => {
             ))
           ) : (
             <Card>
-              <CardContent className="text-center">
+              <CardContent className="text-center py-8">
+                <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <p className="text-gray-600">Nenhum pedido encontrado.</p>
               </CardContent>
             </Card>
@@ -369,64 +400,65 @@ const PedidosRestaurantePage: React.FC = () => {
         <Dialog open={detalhesAberto} onOpenChange={setDetalhesAberto}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Detalhes do Pedido</DialogTitle>
+              <DialogTitle>Detalhes do Pedido #{pedidoSelecionado?.id}</DialogTitle>
             </DialogHeader>
 
             {pedidoSelecionado && (
               <div className="space-y-4">
-                <div>
-                  <strong>Cliente:</strong>
-                  <p>{pedidoSelecionado.cliente}</p>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <strong>Cliente:</strong>
+                    <p>{pedidoSelecionado.cliente.nome}</p>
+                    <p className="text-sm text-gray-600">{pedidoSelecionado.cliente.telefone}</p>
+                  </div>
+                  <div>
+                    <strong>Endereço de Entrega:</strong>
+                    <p>{pedidoSelecionado.cliente.endereco}</p>
+                  </div>
                 </div>
+                
                 <div>
-                  <strong>Endereço:</strong>
-                  <p>{pedidoSelecionado.endereco}</p>
-                </div>
-                <div>
-                  <strong>Itens:</strong>
-                  <ul>
+                  <strong>Itens do Pedido:</strong>
+                  <div className="mt-2 space-y-2">
                     {pedidoSelecionado.itens.map((item, index) => (
-                      <li key={index}>
-                        {item.quantidade}x {item.nome}
-                      </li>
+                      <div key={index} className="flex justify-between border-b pb-2">
+                        <span>{item.quantidade}x {item.nome}</span>
+                        <span className="font-medium">R$ {(item.preco * item.quantidade).toFixed(2)}</span>
+                      </div>
                     ))}
-                  </ul>
+                    <div className="flex justify-between font-bold text-lg pt-2">
+                      <span>Total:</span>
+                      <span className="text-green-600">R$ {pedidoSelecionado.total.toFixed(2)}</span>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <strong>Total:</strong>
-                  <p>R$ {pedidoSelecionado.total.toFixed(2)}</p>
+                
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <strong>Método de Pagamento:</strong>
+                    <p>{pedidoSelecionado.metodoPagamento}</p>
+                  </div>
+                  <div>
+                    <strong>Taxa de Entrega:</strong>
+                    <p>R$ {pedidoSelecionado.valorEntrega.toFixed(2)}</p>
+                  </div>
                 </div>
-                <div>
-                  <strong>Status:</strong>
-                  <Badge
-                    className={
-                      pedidoSelecionado.status === 'pendente'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : pedidoSelecionado.status === 'em_preparo'
-                        ? 'bg-blue-100 text-blue-800'
-                        : pedidoSelecionado.status === 'saiu_para_entrega'
-                        ? 'bg-purple-100 text-purple-800'
-                        : pedidoSelecionado.status === 'entregue'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                    }
-                  >
-                    {pedidoSelecionado.status}
-                  </Badge>
-                </div>
-                 <div>
-                  <strong>Método de Pagamento:</strong>
-                  <p>{pedidoSelecionado.metodoPagamento}</p>
-                </div>
+                
                 <div>
                   <strong>Observações:</strong>
                   <Textarea
                     value={observacoes}
-                    onChange={handleObservacoesChange}
+                    onChange={(e) => setObservacoes(e.target.value)}
                     placeholder="Adicione observações sobre o pedido"
+                    className="mt-2"
                   />
+                  <Button 
+                    onClick={salvarObservacoes} 
+                    className="mt-2 bg-red-600 hover:bg-red-700"
+                  >
+                    Salvar Observações
+                  </Button>
                 </div>
-                <Button onClick={salvarObservacoes} className="bg-red-600 hover:bg-red-700">Salvar Observações</Button>
               </div>
             )}
           </DialogContent>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Layout/Header';
@@ -8,20 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { DollarSign, Package, Clock, MapPin, Truck, Settings } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { pedidosService, Pedido } from '@/services/pedidosService';
 
 const DashboardEntregador: React.FC = () => {
   const [user, setUser] = useState<any>(null);
   const [disponivel, setDisponivel] = useState(true);
-  const [entregasAndamento, setEntregasAndamento] = useState([
-    {
-      id: '#E004',
-      restaurante: 'Pasta & Amore',
-      cliente: 'Maria Santos',
-      endereco: 'Rua Italia, 321',
-      status: 'coletado',
-      tempo_estimado: '8min'
-    }
-  ]);
+  const [entregasAndamento, setEntregasAndamento] = useState<Pedido[]>([]);
+  const [entregasDisponiveis, setEntregasDisponiveis] = useState<Pedido[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -37,6 +29,22 @@ const DashboardEntregador: React.FC = () => {
       navigate('/login');
     }
   }, [navigate]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const unsubscribe = pedidosService.subscribe((pedidos) => {
+      // Pedidos em andamento do entregador atual
+      const andamento = pedidosService.getPedidosDoEntregador(user.nome);
+      setEntregasAndamento(andamento);
+
+      // Pedidos disponíveis (prontos para entrega)
+      const disponiveis = pedidosService.getPedidosDisponiveis();
+      setEntregasDisponiveis(disponiveis);
+    });
+
+    return unsubscribe;
+  }, [user]);
 
   // Dados mockados para demonstração
   const estatisticas = {
@@ -55,50 +63,29 @@ const DashboardEntregador: React.FC = () => {
     tempo_online: '6h 30min'
   };
 
-  const entregasDisponiveis = [
-    {
-      id: '#E001',
-      restaurante: 'Pizza Deliciosa',
-      endereco: 'Rua das Flores, 123',
-      distancia: '1.2 km',
-      valor: 8.50,
-      estimativa: '15min',
-      urgente: false
-    },
-    {
-      id: '#E002',
-      restaurante: 'Burger House',
-      endereco: 'Av. Paulista, 456',
-      distancia: '2.1 km',
-      valor: 12.00,
-      estimativa: '25min',
-      urgente: true
-    },
-    {
-      id: '#E003',
-      restaurante: 'Sushi Premium',
-      endereco: 'Rua do Centro, 789',
-      distancia: '0.8 km',
-      valor: 6.50,
-      estimativa: '12min',
-      urgente: false
-    }
-  ];
-
-  const handleAceitarEntrega = (entregaId: string) => {
-    toast({
-      title: 'Entrega aceita!',
-      description: `Você aceitou a entrega ${entregaId}. Dirija-se ao restaurante.`,
+  const handleAceitarEntrega = (pedidoId: string) => {
+    const sucesso = pedidosService.aceitarEntrega(pedidoId, {
+      nome: user.nome,
+      telefone: user.telefone || '(11) 99999-9999'
     });
+
+    if (sucesso) {
+      toast({
+        title: 'Entrega aceita!',
+        description: `Você aceitou o pedido ${pedidoId}. Dirija-se ao restaurante.`,
+      });
+    }
   };
 
-  const handleConfirmarEntrega = (entregaId: string) => {
-    setEntregasAndamento(prev => prev.filter(e => e.id !== entregaId));
+  const handleConfirmarEntrega = (pedidoId: string) => {
+    const sucesso = pedidosService.atualizarStatusPedido(pedidoId, 'entregue');
     
-    toast({
-      title: 'Entrega confirmada!',
-      description: `Entrega ${entregaId} foi marcada como concluída.`,
-    });
+    if (sucesso) {
+      toast({
+        title: 'Entrega confirmada!',
+        description: `Pedido ${pedidoId} foi marcado como entregue.`,
+      });
+    }
   };
 
   const handleVerNoMapa = (endereco: string) => {
@@ -107,7 +94,6 @@ const DashboardEntregador: React.FC = () => {
       description: `Carregando rota para: ${endereco}`,
     });
     
-    // Abrir Google Maps com o endereço
     const enderecoEncoded = encodeURIComponent(endereco);
     window.open(`https://maps.google.com/?q=${enderecoEncoded}`, '_blank');
   };
@@ -240,7 +226,7 @@ const DashboardEntregador: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Truck className="w-5 h-5 mr-2" />
-                Entregas em Andamento
+                Entregas em Andamento ({entregasAndamento.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -253,21 +239,24 @@ const DashboardEntregador: React.FC = () => {
                   {entregasAndamento.map(entrega => (
                     <div key={entrega.id} className="border rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="font-semibold">{entrega.id}</span>
+                        <span className="font-semibold">#{entrega.id}</span>
                         <Badge className="bg-blue-100 text-blue-800">
-                          Em andamento
+                          {entrega.status === 'saiu_para_entrega' ? 'Em entrega' : entrega.status}
                         </Badge>
                       </div>
                       <div className="space-y-1 text-sm text-gray-600">
-                        <p><strong>Restaurante:</strong> {entrega.restaurante}</p>
-                        <p><strong>Cliente:</strong> {entrega.cliente}</p>
+                        <p><strong>Restaurante:</strong> {entrega.restaurante.nome}</p>
+                        <p><strong>Cliente:</strong> {entrega.cliente.nome}</p>
                         <p className="flex items-center">
                           <MapPin className="w-4 h-4 mr-1" />
-                          {entrega.endereco}
+                          {entrega.cliente.endereco}
                         </p>
                         <p className="flex items-center">
                           <Clock className="w-4 h-4 mr-1" />
-                          Estimativa: {entrega.tempo_estimado}
+                          Estimativa: {entrega.tempoEstimado}
+                        </p>
+                        <p className="text-green-600 font-medium">
+                          Valor: R$ {entrega.valorEntrega.toFixed(2)}
                         </p>
                       </div>
                       <div className="mt-3 space-x-2">
@@ -281,7 +270,7 @@ const DashboardEntregador: React.FC = () => {
                         <Button 
                           size="sm" 
                           variant="outline"
-                          onClick={() => handleVerNoMapa(entrega.endereco)}
+                          onClick={() => handleVerNoMapa(entrega.cliente.endereco)}
                         >
                           Ver no Mapa
                         </Button>
@@ -299,7 +288,7 @@ const DashboardEntregador: React.FC = () => {
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center">
                   <Package className="w-5 h-5 mr-2" />
-                  Entregas Disponíveis
+                  Entregas Disponíveis ({entregasDisponiveis.length})
                 </div>
                 <Button 
                   variant="outline" 
@@ -328,30 +317,32 @@ const DashboardEntregador: React.FC = () => {
                   {entregasDisponiveis.slice(0, 3).map(entrega => (
                     <div key={entrega.id} className="border rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="font-semibold">{entrega.id}</span>
+                        <span className="font-semibold">#{entrega.id}</span>
                         <div className="flex items-center space-x-2">
-                          {entrega.urgente && (
-                            <Badge className="bg-red-100 text-red-800">
-                              Urgente
-                            </Badge>
-                          )}
                           <Badge className="bg-green-100 text-green-800">
-                            R$ {entrega.valor.toFixed(2)}
+                            R$ {entrega.valorEntrega.toFixed(2)}
                           </Badge>
                         </div>
                       </div>
                       <div className="space-y-1 text-sm text-gray-600 mb-3">
-                        <p><strong>Restaurante:</strong> {entrega.restaurante}</p>
+                        <p><strong>Restaurante:</strong> {entrega.restaurante.nome}</p>
                         <p className="flex items-center">
                           <MapPin className="w-4 h-4 mr-1" />
-                          {entrega.endereco}
+                          {entrega.restaurante.endereco}
+                        </p>
+                        <p><strong>Entregar para:</strong> {entrega.cliente.nome}</p>
+                        <p className="flex items-center">
+                          <MapPin className="w-4 h-4 mr-1" />
+                          {entrega.cliente.endereco}
                         </p>
                         <div className="flex items-center justify-between">
                           <span className="flex items-center">
                             <Clock className="w-4 h-4 mr-1" />
-                            {entrega.estimativa}
+                            {entrega.tempoEstimado}
                           </span>
-                          <span>{entrega.distancia}</span>
+                          <span className="text-green-600 font-medium">
+                            Total: R$ {entrega.total.toFixed(2)}
+                          </span>
                         </div>
                       </div>
                       <Button 
@@ -363,6 +354,12 @@ const DashboardEntregador: React.FC = () => {
                       </Button>
                     </div>
                   ))}
+                  
+                  {entregasDisponiveis.length === 0 && (
+                    <p className="text-gray-500 text-center py-4">
+                      Nenhuma entrega disponível no momento
+                    </p>
+                  )}
                 </div>
               )}
             </CardContent>

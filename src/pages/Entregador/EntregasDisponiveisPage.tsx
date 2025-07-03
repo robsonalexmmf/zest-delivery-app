@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Layout/Header';
@@ -7,11 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { MapPin, Clock, DollarSign, Package, Navigation } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { pedidosService, Pedido } from '@/services/pedidosService';
 
 const EntregasDisponiveisPage: React.FC = () => {
   const [user, setUser] = useState<any>(null);
   const [disponivel, setDisponivel] = useState(true);
-  const [entregasDisponiveis, setEntregasDisponiveis] = useState<any[]>([]);
+  const [entregasDisponiveis, setEntregasDisponiveis] = useState<Pedido[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,134 +24,43 @@ const EntregasDisponiveisPage: React.FC = () => {
         navigate('/login');
       } else {
         setUser(parsedUser);
-        carregarEntregasDisponiveis();
       }
     } else {
       navigate('/login');
     }
   }, [navigate]);
 
-  const carregarEntregasDisponiveis = () => {
-    // Dados mockados de entregas disponíveis
-    const entregas = [
-      {
-        id: '#E001',
-        restaurante: {
-          nome: 'Pizza Deliciosa',
-          endereco: 'Rua das Flores, 123 - Centro',
-          telefone: '(11) 3333-3333'
-        },
-        cliente: {
-          nome: 'João Silva',
-          endereco: 'Av. Paulista, 456 - Apto 102',
-          telefone: '(11) 99999-9999'
-        },
-        distancia_total: '2.8 km',
-        distancia_restaurante: '0.5 km',
-        valor_entrega: 8.50,
-        estimativa: '25min',
-        urgente: false,
-        valor_pedido: 89.90,
-        observacoes: 'Apartamento - Interfone 102',
-        produtos: ['Pizza Margherita Grande', 'Coca-Cola 350ml']
-      },
-      {
-        id: '#E002',
-        restaurante: {
-          nome: 'Burger House',
-          endereco: 'Av. Central, 789',
-          telefone: '(11) 4444-4444'
-        },
-        cliente: {
-          nome: 'Maria Santos',
-          endereco: 'Rua do Parque, 321 - Casa',
-          telefone: '(11) 88888-8888'
-        },
-        distancia_total: '1.5 km',
-        distancia_restaurante: '0.3 km',
-        valor_entrega: 12.00,
-        estimativa: '18min',
-        urgente: true,
-        valor_pedido: 65.50,
-        observacoes: 'Portão verde - tocar campainha',
-        produtos: ['X-Bacon', 'Batata Frita', 'Milkshake']
-      },
-      {
-        id: '#E003',
-        restaurante: {
-          nome: 'Sushi Premium',
-          endereco: 'Rua Japão, 555',
-          telefone: '(11) 5555-5555'
-        },
-        cliente: {
-          nome: 'Carlos Oliveira',
-          endereco: 'Condomínio Flores, Bloco A - Apto 205',
-          telefone: '(11) 77777-7777'
-        },
-        distancia_total: '3.2 km',
-        distancia_restaurante: '1.1 km',
-        valor_entrega: 15.00,
-        estimativa: '35min',
-        urgente: false,
-        valor_pedido: 145.80,
-        observacoes: 'Condomínio - avisar na portaria',
-        produtos: ['Combo Sushi Premium', 'Temaki Salmão']
-      },
-      {
-        id: '#E004',
-        restaurante: {
-          nome: 'Açaí da Vila',
-          endereco: 'Praça Central, 111',
-          telefone: '(11) 6666-6666'
-        },
-        cliente: {
-          nome: 'Ana Costa',
-          endereco: 'Rua das Palmeiras, 987',
-          telefone: '(11) 66666-6666'
-        },
-        distancia_total: '1.8 km',
-        distancia_restaurante: '0.7 km',
-        valor_entrega: 6.50,
-        estimativa: '20min',
-        urgente: false,
-        valor_pedido: 28.90,
-        observacoes: '',
-        produtos: ['Açaí 500ml', 'Suco Natural']
-      }
-    ];
-    
-    setEntregasDisponiveis(entregas);
-  };
+  useEffect(() => {
+    if (!user) return;
 
-  const handleAceitarEntrega = (entregaId: string) => {
-    // Salvar entrega aceita no localStorage
-    const entregaAceita = entregasDisponiveis.find(e => e.id === entregaId);
-    if (entregaAceita) {
-      const entregasAndamento = JSON.parse(localStorage.getItem('entregas_andamento') || '[]');
-      entregasAndamento.push({
-        ...entregaAceita,
-        status: 'aceita',
-        horario_aceite: new Date().toLocaleTimeString(),
-        data_aceite: new Date().toLocaleDateString()
-      });
-      localStorage.setItem('entregas_andamento', JSON.stringify(entregasAndamento));
-    }
-    
-    // Remover da lista de disponíveis
-    setEntregasDisponiveis(entregas => entregas.filter(e => e.id !== entregaId));
-    
-    toast({
-      title: 'Entrega aceita!',
-      description: `Você aceitou a entrega ${entregaId}. Dirija-se ao restaurante.`,
+    const unsubscribe = pedidosService.subscribe((pedidos) => {
+      const disponiveis = pedidosService.getPedidosDisponiveis();
+      setEntregasDisponiveis(disponiveis);
     });
 
-    // Redirecionar para dashboard do entregador
-    setTimeout(() => {
-      navigate('/dashboard-entregador');
-    }, 2000);
+    return unsubscribe;
+  }, [user]);
+
+  const handleAceitarEntrega = (pedidoId: string) => {
+    const sucesso = pedidosService.aceitarEntrega(pedidoId, {
+      nome: user.nome,
+      telefone: user.telefone || '(11) 99999-9999'
+    });
+
+    if (sucesso) {
+      toast({
+        title: 'Entrega aceita!',
+        description: `Você aceitou o pedido ${pedidoId}. Dirija-se ao restaurante.`,
+      });
+
+      // Redirecionar para dashboard do entregador
+      setTimeout(() => {
+        navigate('/dashboard-entregador');
+      }, 2000);
+    }
   };
 
-  const handleVerMapa = (entrega: any) => {
+  const handleVerMapa = (entrega: Pedido) => {
     const origem = encodeURIComponent(entrega.restaurante.endereco);
     const destino = encodeURIComponent(entrega.cliente.endereco);
     const url = `https://www.google.com/maps/dir/${origem}/${destino}`;
@@ -230,7 +141,7 @@ const EntregasDisponiveisPage: React.FC = () => {
               <Card>
                 <CardContent className="p-4 text-center">
                   <div className="text-2xl font-bold text-green-600">
-                    R$ {entregasDisponiveis.reduce((total, e) => total + e.valor_entrega, 0).toFixed(2)}
+                    R$ {entregasDisponiveis.reduce((total, e) => total + e.valorEntrega, 0).toFixed(2)}
                   </div>
                   <p className="text-sm text-gray-600">Valor total possível</p>
                 </CardContent>
@@ -238,20 +149,20 @@ const EntregasDisponiveisPage: React.FC = () => {
               <Card>
                 <CardContent className="p-4 text-center">
                   <div className="text-2xl font-bold text-purple-600">
-                    {entregasDisponiveis.filter(e => e.urgente).length}
+                    {entregasDisponiveis.filter(e => e.status === 'pronto').length}
                   </div>
-                  <p className="text-sm text-gray-600">Entregas urgentes</p>
+                  <p className="text-sm text-gray-600">Pedidos prontos</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4 text-center">
                   <div className="text-2xl font-bold text-orange-600">
                     {entregasDisponiveis.length > 0 
-                      ? Math.round(entregasDisponiveis.reduce((total, e) => total + parseFloat(e.distancia_total), 0) / entregasDisponiveis.length * 10) / 10
-                      : 0
-                    } km
+                      ? (entregasDisponiveis.reduce((total, e) => total + e.total, 0) / entregasDisponiveis.length).toFixed(2)
+                      : '0.00'
+                    }
                   </div>
-                  <p className="text-sm text-gray-600">Distância média</p>
+                  <p className="text-sm text-gray-600">Valor médio dos pedidos</p>
                 </CardContent>
               </Card>
             </div>
@@ -263,17 +174,15 @@ const EntregasDisponiveisPage: React.FC = () => {
                   <CardHeader className="pb-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <CardTitle className="text-lg">{entrega.id}</CardTitle>
+                        <CardTitle className="text-lg">#{entrega.id}</CardTitle>
                         <p className="text-sm text-gray-600">{entrega.restaurante.nome}</p>
                       </div>
                       <div className="flex items-center space-x-2">
-                        {entrega.urgente && (
-                          <Badge className="bg-red-100 text-red-800">
-                            Urgente
-                          </Badge>
-                        )}
+                        <Badge className="bg-purple-100 text-purple-800">
+                          Pronto para entrega
+                        </Badge>
                         <Badge className="bg-green-100 text-green-800">
-                          R$ {entrega.valor_entrega.toFixed(2)}
+                          R$ {entrega.valorEntrega.toFixed(2)}
                         </Badge>
                       </div>
                     </div>
@@ -319,18 +228,10 @@ const EntregasDisponiveisPage: React.FC = () => {
                         <div className="space-y-3 text-sm">
                           <div className="flex items-center justify-between">
                             <span className="flex items-center">
-                              <Navigation className="w-4 h-4 mr-2 text-gray-400" />
-                              Distância total
-                            </span>
-                            <span className="font-medium">{entrega.distancia_total}</span>
-                          </div>
-                          
-                          <div className="flex items-center justify-between">
-                            <span className="flex items-center">
                               <Clock className="w-4 h-4 mr-2 text-gray-400" />
                               Tempo estimado
                             </span>
-                            <span className="font-medium">{entrega.estimativa}</span>
+                            <span className="font-medium">{entrega.tempoEstimado}</span>
                           </div>
                           
                           <div className="flex items-center justify-between">
@@ -338,16 +239,27 @@ const EntregasDisponiveisPage: React.FC = () => {
                               <DollarSign className="w-4 h-4 mr-2 text-gray-400" />
                               Valor do pedido
                             </span>
-                            <span className="font-medium">R$ {entrega.valor_pedido.toFixed(2)}</span>
+                            <span className="font-medium">R$ {entrega.total.toFixed(2)}</span>
+                          </div>
+                          
+                          <div className="flex items-center justify-between">
+                            <span className="flex items-center">
+                              <DollarSign className="w-4 h-4 mr-2 text-gray-400" />
+                              Sua taxa de entrega
+                            </span>
+                            <span className="font-medium text-green-600">R$ {entrega.valorEntrega.toFixed(2)}</span>
                           </div>
                           
                           <div className="pt-2 border-t">
                             <p className="text-gray-600 mb-2">Produtos:</p>
                             <ul className="space-y-1">
-                              {entrega.produtos.map((produto, index) => (
-                                <li key={index} className="flex items-center text-gray-600">
-                                  <Package className="w-3 h-3 mr-2" />
-                                  {produto}
+                              {entrega.itens.map((item, index) => (
+                                <li key={index} className="flex items-center justify-between text-gray-600">
+                                  <span className="flex items-center">
+                                    <Package className="w-3 h-3 mr-2" />
+                                    {item.quantidade}x {item.nome}
+                                  </span>
+                                  <span>R$ {(item.preco * item.quantidade).toFixed(2)}</span>
                                 </li>
                               ))}
                             </ul>
@@ -388,7 +300,7 @@ const EntregasDisponiveisPage: React.FC = () => {
                   Não há entregas disponíveis na sua região no momento. Volte em instantes!
                 </p>
                 <Button 
-                  onClick={carregarEntregasDisponiveis}
+                  onClick={() => window.location.reload()}
                   variant="outline"
                 >
                   Atualizar Lista
