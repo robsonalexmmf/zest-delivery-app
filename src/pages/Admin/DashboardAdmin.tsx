@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Users, Store, Truck, ShoppingCart, Eye, Edit, Ban, CheckCircle } from 'lucide-react';
+import { Users, Store, Truck, ShoppingCart, Eye, Edit, Ban, CheckCircle, DollarSign, Calendar, AlertTriangle } from 'lucide-react';
 import Header from '@/components/Layout/Header';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
@@ -30,9 +29,20 @@ interface Pedido {
   data: string;
 }
 
+interface Mensalidade {
+  id: string;
+  restaurante: string;
+  plano: 'basico' | 'premium' | 'enterprise';
+  valor: number;
+  vencimento: string;
+  status: 'pago' | 'pendente' | 'atrasado';
+  dataPagamento?: string;
+}
+
 const DashboardAdmin: React.FC = () => {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
+  const [mensalidades, setMensalidades] = useState<Mensalidade[]>([]);
   const [selectedUser, setSelectedUser] = useState<Usuario | null>(null);
   const [showUserDialog, setShowUserDialog] = useState(false);
   const [stats, setStats] = useState({
@@ -41,7 +51,9 @@ const DashboardAdmin: React.FC = () => {
     totalEntregadores: 0,
     totalPedidos: 0,
     pedidosHoje: 0,
-    receitaTotal: 0
+    receitaTotal: 0,
+    mensalidadesPendentes: 0,
+    receitaMensalidades: 0
   });
 
   useEffect(() => {
@@ -101,17 +113,54 @@ const DashboardAdmin: React.FC = () => {
       }
     ];
 
+    // Dados mockados para mensalidades
+    const mensalidadesMock: Mensalidade[] = [
+      {
+        id: '1',
+        restaurante: 'Pizza Deliciosa',
+        plano: 'premium',
+        valor: 99.90,
+        vencimento: '2024-01-25',
+        status: 'pago',
+        dataPagamento: '2024-01-20'
+      },
+      {
+        id: '2',
+        restaurante: 'Burger House',
+        plano: 'basico',
+        valor: 49.90,
+        vencimento: '2024-01-20',
+        status: 'atrasado'
+      },
+      {
+        id: '3',
+        restaurante: 'Sushi Express',
+        plano: 'enterprise',
+        valor: 199.90,
+        vencimento: '2024-01-30',
+        status: 'pendente'
+      }
+    ];
+
     setUsuarios(usuariosMock);
     setPedidos(pedidosMock);
+    setMensalidades(mensalidadesMock);
     
     // Calculando estatísticas
+    const mensalidadesPendentes = mensalidadesMock.filter(m => m.status !== 'pago').length;
+    const receitaMensalidades = mensalidadesMock
+      .filter(m => m.status === 'pago')
+      .reduce((total, m) => total + m.valor, 0);
+
     setStats({
       totalClientes: usuariosMock.filter(u => u.tipo === 'cliente').length,
       totalRestaurantes: usuariosMock.filter(u => u.tipo === 'restaurante').length,
       totalEntregadores: usuariosMock.filter(u => u.tipo === 'entregador').length,
       totalPedidos: pedidosMock.length,
       pedidosHoje: pedidosMock.filter(p => p.data === '2024-01-20').length,
-      receitaTotal: pedidosMock.reduce((total, p) => total + p.valor, 0)
+      receitaTotal: pedidosMock.reduce((total, p) => total + p.valor, 0),
+      mensalidadesPendentes,
+      receitaMensalidades
     });
   };
 
@@ -126,6 +175,21 @@ const DashboardAdmin: React.FC = () => {
     });
   };
 
+  const marcarMensalidadePaga = (mensalidadeId: string) => {
+    setMensalidades(prev => prev.map(m => 
+      m.id === mensalidadeId ? { 
+        ...m, 
+        status: 'pago' as const, 
+        dataPagamento: new Date().toISOString().split('T')[0] 
+      } : m
+    ));
+    
+    toast({
+      title: 'Mensalidade confirmada',
+      description: 'Pagamento da mensalidade foi confirmado.',
+    });
+  };
+
   const getStatusBadge = (status: string) => {
     const colors = {
       ativo: 'bg-green-100 text-green-800',
@@ -133,7 +197,10 @@ const DashboardAdmin: React.FC = () => {
       suspenso: 'bg-red-100 text-red-800',
       preparando: 'bg-yellow-100 text-yellow-800',
       entregue: 'bg-green-100 text-green-800',
-      cancelado: 'bg-red-100 text-red-800'
+      cancelado: 'bg-red-100 text-red-800',
+      pago: 'bg-green-100 text-green-800',
+      pendente: 'bg-yellow-100 text-yellow-800',
+      atrasado: 'bg-red-100 text-red-800'
     };
     
     return (
@@ -141,6 +208,15 @@ const DashboardAdmin: React.FC = () => {
         {status}
       </Badge>
     );
+  };
+
+  const getPlanoNome = (plano: string) => {
+    const planos = {
+      basico: 'Básico',
+      premium: 'Premium',
+      enterprise: 'Enterprise'
+    };
+    return planos[plano as keyof typeof planos];
   };
 
   return (
@@ -187,11 +263,11 @@ const DashboardAdmin: React.FC = () => {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pedidos Hoje</CardTitle>
-              <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Mensalidades Pendentes</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-red-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.pedidosHoje}</div>
+              <div className="text-2xl font-bold text-red-600">{stats.mensalidadesPendentes}</div>
             </CardContent>
           </Card>
         </div>
@@ -201,6 +277,7 @@ const DashboardAdmin: React.FC = () => {
           <TabsList>
             <TabsTrigger value="usuarios">Usuários</TabsTrigger>
             <TabsTrigger value="pedidos">Pedidos</TabsTrigger>
+            <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
             <TabsTrigger value="relatorios">Relatórios</TabsTrigger>
           </TabsList>
 
@@ -297,6 +374,104 @@ const DashboardAdmin: React.FC = () => {
                         <TableCell>{getStatusBadge(pedido.status)}</TableCell>
                         <TableCell>R$ {pedido.valor.toFixed(2)}</TableCell>
                         <TableCell>{pedido.data}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="financeiro" className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Receita Mensalidades</CardTitle>
+                  <DollarSign className="h-4 w-4 text-green-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600">
+                    R$ {stats.receitaMensalidades.toFixed(2)}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Mensalidades pagas este mês
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Pendentes</CardTitle>
+                  <Calendar className="h-4 w-4 text-yellow-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-yellow-600">
+                    {mensalidades.filter(m => m.status === 'pendente').length}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Mensalidades a vencer
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Atrasadas</CardTitle>
+                  <AlertTriangle className="h-4 w-4 text-red-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-red-600">
+                    {mensalidades.filter(m => m.status === 'atrasado').length}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Mensalidades em atraso
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Mensalidades dos Restaurantes</CardTitle>
+                <CardDescription>
+                  Gerencie os pagamentos das mensalidades dos restaurantes parceiros
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Restaurante</TableHead>
+                      <TableHead>Plano</TableHead>
+                      <TableHead>Valor</TableHead>
+                      <TableHead>Vencimento</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Data Pagamento</TableHead>
+                      <TableHead>Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {mensalidades.map((mensalidade) => (
+                      <TableRow key={mensalidade.id}>
+                        <TableCell className="font-medium">{mensalidade.restaurante}</TableCell>
+                        <TableCell>{getPlanoNome(mensalidade.plano)}</TableCell>
+                        <TableCell>R$ {mensalidade.valor.toFixed(2)}</TableCell>
+                        <TableCell>{mensalidade.vencimento}</TableCell>
+                        <TableCell>{getStatusBadge(mensalidade.status)}</TableCell>
+                        <TableCell>{mensalidade.dataPagamento || '-'}</TableCell>
+                        <TableCell>
+                          {mensalidade.status !== 'pago' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => marcarMensalidadePaga(mensalidade.id)}
+                              className="text-green-600 hover:text-green-700"
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Marcar como Pago
+                            </Button>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
