@@ -1,28 +1,57 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Layout/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Clock, MapPin, Phone, Package, CheckCircle, Truck, X, Search, Filter, Calendar as CalendarIcon, Download, RefreshCw } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { 
+  Package, 
+  Clock, 
+  CheckCircle, 
+  XCircle, 
+  Phone, 
+  MessageSquare,
+  Filter,
+  Download,
+  Search,
+  Calendar,
+  Eye,
+  User,
+  MapPin,
+  DollarSign
+} from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { menuAiService } from '@/services/menuAiService';
+
+interface Pedido {
+  id: string;
+  cliente: string;
+  endereco: string;
+  itens: { nome: string; quantidade: number }[];
+  total: number;
+  status: 'pendente' | 'em_preparo' | 'saiu_para_entrega' | 'entregue' | 'cancelado';
+  data: string;
+  hora: string;
+  entregador?: string;
+  observacoes?: string;
+  metodoPagamento: 'dinheiro' | 'cartao' | 'pix';
+}
 
 const PedidosRestaurantePage: React.FC = () => {
   const [user, setUser] = useState<any>(null);
-  const [filtroStatus, setFiltroStatus] = useState('todos');
-  const [filtroData, setFiltroData] = useState<Date | undefined>(undefined);
-  const [busca, setBusca] = useState('');
-  const [pedidosSelecionados, setPedidosSelecionados] = useState<string[]>([]);
-  const [showFiltros, setShowFiltros] = useState(false);
-  const [atualizandoPedidos, setAtualizandoPedidos] = useState(false);
   const navigate = useNavigate();
+  const [pedidos, setPedidos] = useState<Pedido[]>([]);
+  const [filtroStatus, setFiltroStatus] = useState<string>('pendente');
+  const [termoBusca, setTermoBusca] = useState<string>('');
+  const [dataInicio, setDataInicio] = useState<string>('');
+  const [dataFim, setDataFim] = useState<string>('');
+  const [pedidoSelecionado, setPedidoSelecionado] = useState<Pedido | null>(null);
+  const [detalhesAberto, setDetalhesAberto] = useState<boolean>(false);
+  const [observacoes, setObservacoes] = useState<string>('');
 
   useEffect(() => {
     const userData = localStorage.getItem('zdelivery_user');
@@ -40,671 +69,368 @@ const PedidosRestaurantePage: React.FC = () => {
   }, [navigate]);
 
   const carregarPedidos = () => {
-    const pedidosSalvos = localStorage.getItem('restaurant_orders');
-    if (pedidosSalvos) {
-      setPedidos(JSON.parse(pedidosSalvos));
-      return;
-    }
-    // Manter pedidos mockados se não houver salvos
+    // Simulação de dados de pedidos (substitua por sua lógica real)
+    const pedidosMock: Pedido[] = [
+      {
+        id: '1',
+        cliente: 'João Silva',
+        endereco: 'Rua A, 123 - Centro',
+        itens: [{ nome: 'Pizza Calabresa', quantidade: 1 }, { nome: 'Coca-Cola', quantidade: 2 }],
+        total: 45.50,
+        status: 'pendente',
+        data: '2024-08-01',
+        hora: '19:30',
+        metodoPagamento: 'dinheiro',
+        observacoes: 'Sem cebola, por favor.'
+      },
+      {
+        id: '2',
+        cliente: 'Maria Souza',
+        endereco: 'Av. B, 456 - Jardim',
+        itens: [{ nome: 'Hamburguer', quantidade: 2 }, { nome: 'Batata Frita', quantidade: 1 }],
+        total: 32.00,
+        status: 'em_preparo',
+        data: '2024-08-01',
+        hora: '20:00',
+        metodoPagamento: 'cartao',
+        entregador: 'Carlos',
+        observacoes: 'Adicionar maionese extra.'
+      },
+      {
+        id: '3',
+        cliente: 'Ana Paula',
+        endereco: 'Rua C, 789 - Vila Nova',
+        itens: [{ nome: 'Sushi', quantidade: 10 }],
+        total: 68.00,
+        status: 'saiu_para_entrega',
+        data: '2024-08-01',
+        hora: '20:15',
+        metodoPagamento: 'pix',
+        entregador: 'Pedro'
+      },
+      {
+        id: '4',
+        cliente: 'Ricardo Oliveira',
+        endereco: 'Av. D, 1011 - Bela Vista',
+        itens: [{ nome: 'Pizza Margherita', quantidade: 1 }, { nome: 'Suco de Laranja', quantidade: 1 }],
+        total: 40.00,
+        status: 'entregue',
+        data: '2024-08-01',
+        hora: '20:30',
+        metodoPagamento: 'dinheiro'
+      },
+      {
+        id: '5',
+        cliente: 'Fernanda Costa',
+        endereco: 'Rua E, 1213 - Floresta',
+        itens: [{ nome: 'Salada', quantidade: 1 }],
+        total: 25.00,
+        status: 'cancelado',
+        data: '2024-08-01',
+        hora: '20:45',
+        metodoPagamento: 'cartao',
+        observacoes: 'Pedido cancelado pelo cliente.'
+      },
+    ];
+    setPedidos(pedidosMock);
   };
 
-  // Dados mockados de pedidos expandidos
-  const [pedidos, setPedidos] = useState([
-    {
-      id: '#001',
-      cliente: {
-        nome: 'João Silva',
-        telefone: '5511999999999',
-        endereco: 'Rua das Flores, 123 - Centro'
-      },
-      produtos: [
-        { nome: 'Pizza Margherita Grande', quantidade: 1, preco: 35.90 },
-        { nome: 'Coca-Cola 350ml', quantidade: 2, preco: 5.50 }
-      ],
-      valor_total: 46.90,
-      status: 'recebido',
-      horario: '19:30',
-      observacoes: 'Sem cebola, por favor',
-      pagamento: 'Cartão de Crédito',
-      data: new Date().toLocaleDateString(),
-      tempo_estimado: 35,
-      avaliacao: null
-    },
-    {
-      id: '#002',
-      cliente: {
-        nome: 'Maria Santos',
-        telefone: '5511888888888',
-        endereco: 'Av. Paulista, 456 - Apto 102'
-      },
-      produtos: [
-        { nome: 'Pizza Calabresa', quantidade: 1, preco: 38.90 }
-      ],
-      valor_total: 38.90,
-      status: 'preparando',
-      horario: '19:45',
-      observacoes: '',
-      pagamento: 'PIX',
-      data: new Date().toLocaleDateString(),
-      tempo_estimado: 25,
-      avaliacao: null
-    },
-    {
-      id: '#003',
-      cliente: {
-        nome: 'Carlos Oliveira',
-        telefone: '5511777777777',
-        endereco: 'Rua do Centro, 789'
-      },
-      produtos: [
-        { nome: 'Pizza Portuguesa', quantidade: 1, preco: 42.90 },
-        { nome: 'Pizza 4 Queijos', quantidade: 1, preco: 45.90 }
-      ],
-      valor_total: 88.80,
-      status: 'pronto',
-      horario: '19:15',
-      observacoes: 'Entregar no portão',
-      pagamento: 'Dinheiro',
-      data: new Date().toLocaleDateString(),
-      tempo_estimado: 30,
-      avaliacao: 4.5
-    },
-    {
-      id: '#004',
-      cliente: {
-        nome: 'Ana Costa',
-        telefone: '5511666666666',
-        endereco: 'Rua das Palmeiras, 321'
-      },
-      produtos: [
-        { nome: 'Pizza Frango Catupiry', quantidade: 1, preco: 39.90 }
-      ],
-      valor_total: 39.90,
-      status: 'entregue',
-      horario: '18:30',
-      observacoes: '',
-      pagamento: 'PIX',
-      data: new Date().toLocaleDateString(),
-      tempo_estimado: 28,
-      avaliacao: 5.0
-    }
-  ]);
+  const filtrarPedidos = () => {
+    let pedidosFiltrados = pedidos;
 
-  const getStatusBadge = (status: string) => {
-    const statusMap = {
-      'recebido': { color: 'bg-blue-100 text-blue-800', label: 'Recebido', icon: Package },
-      'preparando': { color: 'bg-yellow-100 text-yellow-800', label: 'Preparando', icon: Clock },
-      'pronto': { color: 'bg-green-100 text-green-800', label: 'Pronto', icon: CheckCircle },
-      'saiu_entrega': { color: 'bg-purple-100 text-purple-800', label: 'Saiu para Entrega', icon: Truck },
-      'entregue': { color: 'bg-gray-100 text-gray-800', label: 'Entregue', icon: CheckCircle },
-      'cancelado': { color: 'bg-red-100 text-red-800', label: 'Cancelado', icon: X }
-    };
-    return statusMap[status as keyof typeof statusMap] || statusMap.recebido;
+    if (filtroStatus) {
+      pedidosFiltrados = pedidosFiltrados.filter(pedido => pedido.status === filtroStatus);
+    }
+
+    if (termoBusca) {
+      const termo = termoBusca.toLowerCase();
+      pedidosFiltrados = pedidosFiltrados.filter(pedido =>
+        pedido.cliente.toLowerCase().includes(termo) ||
+        pedido.endereco.toLowerCase().includes(termo) ||
+        pedido.id.includes(termo)
+      );
+    }
+
+    if (dataInicio && dataFim) {
+      pedidosFiltrados = pedidosFiltrados.filter(pedido => {
+        const dataPedido = new Date(pedido.data);
+        const inicio = new Date(dataInicio);
+        const fim = new Date(dataFim);
+        return dataPedido >= inicio && dataPedido <= fim;
+      });
+    }
+
+    return pedidosFiltrados;
   };
 
-  const handleStatusChange = async (pedidoId: string, novoStatus: string) => {
-    const pedido = pedidos.find(p => p.id === pedidoId);
-    
-    setPedidos(pedidos.map(pedido => 
-      pedido.id === pedidoId ? { ...pedido, status: novoStatus } : pedido
+  const handleStatusChange = (id: string, novoStatus: Pedido['status']) => {
+    setPedidos(pedidos.map(pedido =>
+      pedido.id === id ? { ...pedido, status: novoStatus } : pedido
     ));
-    
-    const pedidosAtualizados = pedidos.map(p => 
-      p.id === pedidoId ? { ...p, status: novoStatus } : p
-    );
-    localStorage.setItem('restaurant_orders', JSON.stringify(pedidosAtualizados));
-    
-    const statusInfo = getStatusBadge(novoStatus);
-    
     toast({
-      title: 'Status atualizado!',
-      description: `Pedido ${pedidoId} foi atualizado para ${statusInfo.label}.`,
-    });
-
-    if (pedido && menuAiService.isConfigured()) {
-      try {
-        await menuAiService.sendStatusMessage(
-          pedido.cliente.telefone,
-          pedidoId,
-          novoStatus,
-          user?.nome || 'Restaurante'
-        );
-        
-        toast({
-          title: 'WhatsApp enviado!',
-          description: `Notificação enviada para ${pedido.cliente.nome}.`,
-        });
-      } catch (error) {
-        console.error('Erro ao enviar WhatsApp:', error);
-      }
-    }
-
-    if (novoStatus === 'saiu_entrega') {
-      toast({
-        title: 'Entregador notificado!',
-        description: `O entregador foi notificado sobre o pedido ${pedidoId}.`,
-      });
-    }
-  };
-
-  const handleEntrarContato = (pedido: any) => {
-    const telefone = pedido.cliente.telefone.replace(/\D/g, '');
-    const mensagem = encodeURIComponent(
-      `Olá ${pedido.cliente.nome}! Sou do restaurante ${user?.nome || 'ZDelivery'} sobre o seu pedido ${pedido.id}.`
-    );
-    const url = `https://wa.me/${telefone}?text=${mensagem}`;
-    
-    window.open(url, '_blank');
-    
-    toast({
-      title: 'Abrindo WhatsApp',
-      description: `Entrando em contato com ${pedido.cliente.nome}`,
+      title: 'Status do pedido atualizado!',
+      description: `O pedido ${id} foi atualizado para ${novoStatus}.`,
     });
   };
 
-  const handleCancelarPedido = (pedidoId: string) => {
-    const pedido = pedidos.find(p => p.id === pedidoId);
-    
-    if (pedido && ['recebido', 'preparando'].includes(pedido.status)) {
-      handleStatusChange(pedidoId, 'cancelado');
-    } else {
+  const handleObservacoesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setObservacoes(e.target.value);
+  };
+
+  const salvarObservacoes = () => {
+    if (pedidoSelecionado) {
+      setPedidos(pedidos.map(pedido =>
+        pedido.id === pedidoSelecionado.id ? { ...pedido, observacoes: observacoes } : pedido
+      ));
+      setPedidoSelecionado({ ...pedidoSelecionado, observacoes: observacoes });
       toast({
-        title: 'Não é possível cancelar',
-        description: 'Este pedido não pode ser cancelado no status atual.',
-        variant: 'destructive'
+        title: 'Observações salvas!',
+        description: 'As observações do pedido foram atualizadas.',
       });
     }
   };
 
-  const handleSelecionarPedido = (pedidoId: string, selecionado: boolean) => {
-    if (selecionado) {
-      setPedidosSelecionados([...pedidosSelecionados, pedidoId]);
-    } else {
-      setPedidosSelecionados(pedidosSelecionados.filter(id => id !== pedidoId));
-    }
-  };
-
-  const handleSelecionarTodos = (selecionado: boolean) => {
-    if (selecionado) {
-      setPedidosSelecionados(pedidosFiltrados.map(p => p.id));
-    } else {
-      setPedidosSelecionados([]);
-    }
-  };
-
-  const handleAcaoLote = async (acao: string) => {
-    if (pedidosSelecionados.length === 0) {
-      toast({
-        title: 'Nenhum pedido selecionado',
-        description: 'Selecione pelo menos um pedido para executar a ação.',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    const acoes = {
-      'marcar_preparando': 'preparando',
-      'marcar_pronto': 'pronto',
-      'marcar_saiu_entrega': 'saiu_entrega',
-      'cancelar': 'cancelado'
-    };
-
-    const novoStatus = acoes[acao as keyof typeof acoes];
-    if (novoStatus) {
-      pedidosSelecionados.forEach(pedidoId => {
-        handleStatusChange(pedidoId, novoStatus);
-      });
-      setPedidosSelecionados([]);
-      
-      toast({
-        title: 'Ação executada!',
-        description: `${pedidosSelecionados.length} pedido(s) atualizado(s).`,
-      });
-    }
-  };
-
-  const atualizarPedidos = () => {
-    setAtualizandoPedidos(true);
-    // Simular atualização
-    setTimeout(() => {
-      carregarPedidos();
-      setAtualizandoPedidos(false);
-      toast({
-        title: 'Pedidos atualizados!',
-        description: 'Lista de pedidos foi atualizada.',
-      });
-    }, 1000);
-  };
-
-  const exportarRelatorio = () => {
-    const dados = pedidosFiltrados.map(pedido => ({
-      ID: pedido.id,
-      Cliente: pedido.cliente.nome,
-      Telefone: pedido.cliente.telefone,
-      Status: getStatusBadge(pedido.status).label,
-      Valor: `R$ ${pedido.valor_total.toFixed(2)}`,
-      Horario: pedido.horario,
-      Data: pedido.data,
-      Pagamento: pedido.pagamento
-    }));
-
-    const csv = [
-      Object.keys(dados[0]).join(','),
-      ...dados.map(row => Object.values(row).join(','))
-    ].join('\n');
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `pedidos_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-
-    toast({
-      title: 'Relatório exportado!',
-      description: 'Arquivo CSV foi baixado com sucesso.',
-    });
-  };
-
-  // Filtros aplicados
-  let pedidosFiltrados = pedidos;
-
-  if (filtroStatus !== 'todos') {
-    pedidosFiltrados = pedidosFiltrados.filter(pedido => pedido.status === filtroStatus);
-  }
-
-  if (filtroData) {
-    const dataFiltro = filtroData.toLocaleDateString();
-    pedidosFiltrados = pedidosFiltrados.filter(pedido => pedido.data === dataFiltro);
-  }
-
-  if (busca) {
-    pedidosFiltrados = pedidosFiltrados.filter(pedido => 
-      pedido.id.toLowerCase().includes(busca.toLowerCase()) ||
-      pedido.cliente.nome.toLowerCase().includes(busca.toLowerCase()) ||
-      pedido.cliente.telefone.includes(busca)
-    );
-  }
-
-  const getProximoStatus = (statusAtual: string) => {
-    const fluxo = {
-      'recebido': 'preparando',
-      'preparando': 'pronto',
-      'pronto': 'saiu_entrega',
-      'saiu_entrega': 'entregue'
-    };
-    return fluxo[statusAtual as keyof typeof fluxo];
-  };
-
-  const getStatusActions = (pedido: any) => {
-    const actions = [];
-    
-    const proximoStatus = getProximoStatus(pedido.status);
-    if (proximoStatus) {
-      const statusInfo = getStatusBadge(proximoStatus);
-      const StatusIcon = statusInfo.icon;
-      
-      actions.push(
-        <Button 
-          key="proximo"
-          onClick={() => handleStatusChange(pedido.id, proximoStatus)}
-          className="bg-red-600 hover:bg-red-700"
-          size="sm"
-        >
-          <StatusIcon className="w-4 h-4 mr-2" />
-          Marcar como {statusInfo.label}
-        </Button>
-      );
-    }
-    
-    if (['recebido', 'preparando'].includes(pedido.status)) {
-      actions.push(
-        <Button 
-          key="cancelar"
-          variant="outline"
-          onClick={() => handleCancelarPedido(pedido.id)}
-          className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
-          size="sm"
-        >
-          <X className="w-4 h-4 mr-2" />
-          Cancelar Pedido
-        </Button>
-      );
-    }
-    
-    return actions;
-  };
+  const pedidosFiltrados = filtrarPedidos();
 
   if (!user) return null;
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Header userType="restaurante" userName={user.nome} />
-      
+
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-800 mb-2">
-                Pedidos
-              </h1>
-              <p className="text-gray-600">
-                Gerencie os pedidos do seu restaurante
-              </p>
-            </div>
-            
-            <div className="flex items-center space-x-3">
-              <Button
-                variant="outline"
-                onClick={atualizarPedidos}
-                disabled={atualizandoPedidos}
-              >
-                <RefreshCw className={`w-4 h-4 mr-2 ${atualizandoPedidos ? 'animate-spin' : ''}`} />
-                Atualizar
-              </Button>
-              
-              <Button
-                variant="outline"
-                onClick={exportarRelatorio}
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Exportar
-              </Button>
-              
-              <Button
-                variant="outline"
-                onClick={() => setShowFiltros(!showFiltros)}
-              >
-                <Filter className="w-4 h-4 mr-2" />
-                Filtros
-              </Button>
-            </div>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">
+            Pedidos do Restaurante
+          </h1>
+          <p className="text-gray-600">
+            Acompanhe e gerencie os pedidos do seu restaurante
+          </p>
+        </div>
+
+        {/* Filtros e Busca */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          {/* Filtro por Status */}
+          <div>
+            <Label htmlFor="filtro-status">Filtrar por Status:</Label>
+            <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+              <SelectTrigger id="filtro-status">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pendente">Pendentes</SelectItem>
+                <SelectItem value="em_preparo">Em Preparo</SelectItem>
+                <SelectItem value="saiu_para_entrega">Saiu para Entrega</SelectItem>
+                <SelectItem value="entregue">Entregues</SelectItem>
+                <SelectItem value="cancelado">Cancelados</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        </div>
 
-        {/* Filtros Expandidos */}
-        {showFiltros && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Filtros Avançados</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-4 gap-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <Input
-                    placeholder="Buscar por ID, cliente ou telefone"
-                    value={busca}
-                    onChange={(e) => setBusca(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                
-                <Select value={filtroStatus} onValueChange={setFiltroStatus}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos os pedidos</SelectItem>
-                    <SelectItem value="recebido">Recebidos</SelectItem>
-                    <SelectItem value="preparando">Preparando</SelectItem>
-                    <SelectItem value="pronto">Prontos</SelectItem>
-                    <SelectItem value="saiu_entrega">Em entrega</SelectItem>
-                    <SelectItem value="entregue">Entregues</SelectItem>
-                    <SelectItem value="cancelado">Cancelados</SelectItem>
-                  </SelectContent>
-                </Select>
-                
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="justify-start">
-                      <CalendarIcon className="w-4 h-4 mr-2" />
-                      {filtroData ? filtroData.toLocaleDateString() : 'Selecionar data'}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={filtroData}
-                      onSelect={setFiltroData}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setBusca('');
-                    setFiltroStatus('todos');
-                    setFiltroData(undefined);
-                  }}
-                >
-                  Limpar Filtros
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Estatísticas Rápidas */}
-        <div className="grid md:grid-cols-6 gap-4 mb-8">
-          <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-blue-600">
-                {pedidos.filter(p => p.status === 'recebido').length}
-              </div>
-              <p className="text-sm text-gray-600">Recebidos</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-yellow-600">
-                {pedidos.filter(p => p.status === 'preparando').length}
-              </div>
-              <p className="text-sm text-gray-600">Preparando</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-green-600">
-                {pedidos.filter(p => p.status === 'pronto').length}
-              </div>
-              <p className="text-sm text-gray-600">Prontos</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-purple-600">
-                {pedidos.filter(p => p.status === 'saiu_entrega').length}
-              </div>
-              <p className="text-sm text-gray-600">Em entrega</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-gray-600">
-                {pedidos.filter(p => p.status === 'entregue').length}
-              </div>
-              <p className="text-sm text-gray-600">Entregues</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-red-600">
-                {pedidos.filter(p => p.status === 'cancelado').length}
-              </div>
-              <p className="text-sm text-gray-600">Cancelados</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Ações em Lote */}
-        {pedidosSelecionados.length > 0 && (
-          <Card className="mb-6 bg-blue-50 border-blue-200">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <span className="font-medium">
-                  {pedidosSelecionados.length} pedido(s) selecionado(s)
-                </span>
-                <div className="flex space-x-2">
-                  <Button size="sm" onClick={() => handleAcaoLote('marcar_preparando')}>
-                    Marcar como Preparando
-                  </Button>
-                  <Button size="sm" onClick={() => handleAcaoLote('marcar_pronto')}>
-                    Marcar como Pronto
-                  </Button>
-                  <Button size="sm" onClick={() => handleAcaoLote('marcar_saiu_entrega')}>
-                    Marcar Saiu p/ Entrega
-                  </Button>
-                  <Button size="sm" variant="destructive" onClick={() => handleAcaoLote('cancelar')}>
-                    Cancelar Selecionados
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Controle de Seleção */}
-        {pedidosFiltrados.length > 0 && (
-          <div className="flex items-center space-x-4 mb-4">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                checked={pedidosSelecionados.length === pedidosFiltrados.length}
-                onCheckedChange={handleSelecionarTodos}
+          {/* Busca por Termo */}
+          <div>
+            <Label htmlFor="busca">Buscar:</Label>
+            <div className="relative">
+              <Input
+                id="busca"
+                type="search"
+                placeholder="Buscar por cliente, endereço ou #ID"
+                value={termoBusca}
+                onChange={(e) => setTermoBusca(e.target.value)}
               />
-              <Label>Selecionar todos ({pedidosFiltrados.length})</Label>
+              <Search className="absolute top-2.5 right-3 w-5 h-5 text-gray-500" />
             </div>
           </div>
-        )}
+
+          {/* Filtro por Data */}
+          <div>
+            <Label htmlFor="data-inicio">Data Início:</Label>
+            <Input
+              type="date"
+              id="data-inicio"
+              value={dataInicio}
+              onChange={(e) => setDataInicio(e.target.value)}
+            />
+          </div>
+          <div>
+            <Label htmlFor="data-fim">Data Fim:</Label>
+            <Input
+              type="date"
+              id="data-fim"
+              value={dataFim}
+              onChange={(e) => setDataFim(e.target.value)}
+            />
+          </div>
+        </div>
 
         {/* Lista de Pedidos */}
-        <div className="space-y-6">
-          {pedidosFiltrados.map(pedido => {
-            const statusInfo = getStatusBadge(pedido.status);
-            const StatusIcon = statusInfo.icon;
-            
-            return (
-              <Card key={pedido.id} className="overflow-hidden">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <Checkbox
-                        checked={pedidosSelecionados.includes(pedido.id)}
-                        onCheckedChange={(checked) => handleSelecionarPedido(pedido.id, checked as boolean)}
-                      />
-                      <div>
-                        <CardTitle className="text-lg">{pedido.id}</CardTitle>
-                        <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
-                          <span className="flex items-center">
-                            <Clock className="w-4 h-4 mr-1" />
-                            {pedido.horario} - {pedido.data}
-                          </span>
-                          <span>{pedido.pagamento}</span>
-                          {pedido.tempo_estimado && (
-                            <span>⏱️ {pedido.tempo_estimado}min</span>
-                          )}
-                        </div>
-                      </div>
+        <div className="grid grid-cols-1 gap-4">
+          {pedidosFiltrados.length > 0 ? (
+            pedidosFiltrados.map((pedido) => (
+              <Card key={pedido.id} className="border">
+                <CardHeader className="flex items-center justify-between">
+                  <CardTitle>
+                    <div className="flex items-center">
+                      <Package className="w-5 h-5 mr-2" />
+                      Pedido #{pedido.id} - {pedido.cliente}
                     </div>
-                    <div className="flex items-center space-x-3">
-                      <Badge className={statusInfo.color}>
-                        <StatusIcon className="w-3 h-3 mr-1" />
-                        {statusInfo.label}
-                      </Badge>
-                      <span className="font-bold text-lg text-green-600">
-                        R$ {pedido.valor_total.toFixed(2)}
-                      </span>
-                      {pedido.avaliacao && (
-                        <div className="flex items-center">
-                          <span className="text-yellow-500">⭐</span>
-                          <span className="text-sm ml-1">{pedido.avaliacao}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  </CardTitle>
+                  <Badge variant="secondary">{pedido.metodoPagamento}</Badge>
                 </CardHeader>
-                
-                <CardContent>
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                      <h4 className="font-medium mb-3">Cliente</h4>
-                      <div className="space-y-2 text-sm">
-                        <p className="font-medium">{pedido.cliente.nome}</p>
-                        <p className="flex items-center text-gray-600">
-                          <Phone className="w-4 h-4 mr-2" />
-                          {pedido.cliente.telefone}
-                        </p>
-                        <p className="flex items-center text-gray-600">
-                          <MapPin className="w-4 h-4 mr-2" />
-                          {pedido.cliente.endereco}
-                        </p>
-                        {pedido.observacoes && (
-                          <p className="text-gray-600 bg-yellow-50 p-2 rounded">
-                            <strong>Obs:</strong> {pedido.observacoes}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div>
-                      <h4 className="font-medium mb-3">Produtos</h4>
-                      <div className="space-y-2">
-                        {pedido.produtos.map((produto, index) => (
-                          <div key={index} className="flex items-center justify-between text-sm">
-                            <div className="flex items-center">
-                              <Package className="w-4 h-4 mr-2 text-gray-400" />
-                              <span>{produto.quantidade}x {produto.nome}</span>
-                            </div>
-                            <span className="font-medium">
-                              R$ {(produto.quantidade * produto.preco).toFixed(2)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="mt-3 pt-3 border-t">
-                        <div className="flex justify-between font-semibold">
-                          <span>Total:</span>
-                          <span className="text-green-600">R$ {pedido.valor_total.toFixed(2)}</span>
-                        </div>
-                      </div>
-                    </div>
+                <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <strong>Endereço:</strong>
+                    <p>{pedido.endereco}</p>
+                  </div>
+                  <div>
+                    <strong>Data/Hora:</strong>
+                    <p>{pedido.data} - {pedido.hora}</p>
+                  </div>
+                  <div>
+                    <strong>Total:</strong>
+                    <p>R$ {pedido.total.toFixed(2)}</p>
                   </div>
 
-                  <div className="flex flex-wrap gap-3 mt-6 pt-4 border-t">
-                    {getStatusActions(pedido)}
-                    
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleEntrarContato(pedido)}
-                    >
-                      <Phone className="w-4 h-4 mr-2" />
-                      Entrar em Contato
-                    </Button>
+                  <div className="md:col-span-3">
+                    <strong>Itens:</strong>
+                    <ul>
+                      {pedido.itens.map((item, index) => (
+                        <li key={index}>
+                          {item.quantidade}x {item.nome}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="md:col-span-3 flex justify-between items-center">
+                    <div>
+                      <strong>Status:</strong>
+                      <Badge
+                        className={
+                          pedido.status === 'pendente'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : pedido.status === 'em_preparo'
+                            ? 'bg-blue-100 text-blue-800'
+                            : pedido.status === 'saiu_para_entrega'
+                            ? 'bg-purple-100 text-purple-800'
+                            : pedido.status === 'entregue'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                        }
+                      >
+                        {pedido.status}
+                      </Badge>
+                    </div>
+
+                    <div className="space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setPedidoSelecionado(pedido);
+                          setObservacoes(pedido.observacoes || '');
+                          setDetalhesAberto(true);
+                        }}
+                      >
+                        <Eye className="w-4 h-4 mr-2" />
+                        Detalhes
+                      </Button>
+                      
+                      <Select
+                        value={pedido.status}
+                        onValueChange={(value: any) => handleStatusChange(pedido.id, value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pendente">Pendente</SelectItem>
+                          <SelectItem value="em_preparo">Em Preparo</SelectItem>
+                          <SelectItem value="saiu_para_entrega">Saiu para Entrega</SelectItem>
+                          <SelectItem value="entregue">Entregue</SelectItem>
+                          <SelectItem value="cancelado">Cancelado</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
-            );
-          })}
+            ))
+          ) : (
+            <Card>
+              <CardContent className="text-center">
+                <p className="text-gray-600">Nenhum pedido encontrado.</p>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
-        {pedidosFiltrados.length === 0 && (
-          <div className="text-center py-12">
-            <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Nenhum pedido encontrado
-            </h3>
-            <p className="text-gray-500">
-              {filtroStatus === 'todos' 
-                ? 'Não há pedidos no momento.' 
-                : `Não há pedidos com os filtros aplicados.`
-              }
-            </p>
-          </div>
-        )}
+        {/* Modal de Detalhes do Pedido */}
+        <Dialog open={detalhesAberto} onOpenChange={setDetalhesAberto}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Detalhes do Pedido</DialogTitle>
+            </DialogHeader>
+
+            {pedidoSelecionado && (
+              <div className="space-y-4">
+                <div>
+                  <strong>Cliente:</strong>
+                  <p>{pedidoSelecionado.cliente}</p>
+                </div>
+                <div>
+                  <strong>Endereço:</strong>
+                  <p>{pedidoSelecionado.endereco}</p>
+                </div>
+                <div>
+                  <strong>Itens:</strong>
+                  <ul>
+                    {pedidoSelecionado.itens.map((item, index) => (
+                      <li key={index}>
+                        {item.quantidade}x {item.nome}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <strong>Total:</strong>
+                  <p>R$ {pedidoSelecionado.total.toFixed(2)}</p>
+                </div>
+                <div>
+                  <strong>Status:</strong>
+                  <Badge
+                    className={
+                      pedidoSelecionado.status === 'pendente'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : pedidoSelecionado.status === 'em_preparo'
+                        ? 'bg-blue-100 text-blue-800'
+                        : pedidoSelecionado.status === 'saiu_para_entrega'
+                        ? 'bg-purple-100 text-purple-800'
+                        : pedidoSelecionado.status === 'entregue'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    }
+                  >
+                    {pedidoSelecionado.status}
+                  </Badge>
+                </div>
+                 <div>
+                  <strong>Método de Pagamento:</strong>
+                  <p>{pedidoSelecionado.metodoPagamento}</p>
+                </div>
+                <div>
+                  <strong>Observações:</strong>
+                  <Textarea
+                    value={observacoes}
+                    onChange={handleObservacoesChange}
+                    placeholder="Adicione observações sobre o pedido"
+                  />
+                </div>
+                <Button onClick={salvarObservacoes} className="bg-red-600 hover:bg-red-700">Salvar Observações</Button>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );

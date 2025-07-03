@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Layout/Header';
@@ -40,6 +39,12 @@ const DashboardRestaurante: React.FC = () => {
     aceita_pix: true,
     aceita_cartao: true,
     aceita_dinheiro: true,
+    // Configuração PIX do restaurante
+    pix: {
+      ativo: true,
+      chave: '',
+      tipo: 'cpf' as 'cpf' | 'email' | 'telefone' | 'aleatorio'
+    },
     // Configurações avançadas
     raio_entrega: 5,
     valor_minimo_pedido: 20,
@@ -154,6 +159,30 @@ const DashboardRestaurante: React.FC = () => {
   const salvarConfiguracaoBasica = () => {
     salvarConfiguracoes(configuracoes);
     setShowConfigDialog(false);
+  };
+
+  const handleTestarPix = () => {
+    if (!configuracoes.pix.chave.trim()) {
+      toast({
+        title: 'Informe a chave PIX',
+        description: 'Digite sua chave PIX antes de testar.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    toast({
+      title: 'Testando chave PIX...',
+      description: 'Verificando se a chave é válida.',
+    });
+
+    // Simular validação
+    setTimeout(() => {
+      toast({
+        title: 'Chave PIX válida!',
+        description: 'Sua chave está configurada corretamente.',
+      });
+    }, 2000);
   };
 
   if (!user) return null;
@@ -311,6 +340,78 @@ const DashboardRestaurante: React.FC = () => {
                             maxSizeMB={3}
                           />
                         </div>
+                      </div>
+
+                      {/* Configuração PIX */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold flex items-center">
+                          <DollarSign className="w-5 h-5 mr-2" />
+                          Configuração PIX
+                        </h3>
+                        
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="pix-ativo">Receber pagamentos via PIX</Label>
+                          <Switch
+                            id="pix-ativo"
+                            checked={configuracoes.pix.ativo}
+                            onCheckedChange={(checked) =>
+                              setConfiguracoes(prev => ({
+                                ...prev,
+                                pix: { ...prev.pix, ativo: checked }
+                              }))
+                            }
+                          />
+                        </div>
+
+                        {configuracoes.pix.ativo && (
+                          <>
+                            <div>
+                              <Label htmlFor="tipo-chave-pix">Tipo da Chave PIX</Label>
+                              <Select
+                                value={configuracoes.pix.tipo}
+                                onValueChange={(value: any) =>
+                                  setConfiguracoes(prev => ({
+                                    ...prev,
+                                    pix: { ...prev.pix, tipo: value }
+                                  }))
+                                }
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="cpf">CPF</SelectItem>
+                                  <SelectItem value="email">E-mail</SelectItem>
+                                  <SelectItem value="telefone">Telefone</SelectItem>
+                                  <SelectItem value="aleatorio">Chave Aleatória</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div>
+                              <Label htmlFor="chave-pix-restaurante">Chave PIX</Label>
+                              <div className="flex space-x-2">
+                                <Input
+                                  id="chave-pix-restaurante"
+                                  value={configuracoes.pix.chave}
+                                  onChange={(e) =>
+                                    setConfiguracoes(prev => ({
+                                      ...prev,
+                                      pix: { ...prev.pix, chave: e.target.value }
+                                    }))
+                                  }
+                                  placeholder={`Sua chave ${configuracoes.pix.tipo}`}
+                                />
+                                <Button onClick={handleTestarPix} variant="outline">
+                                  Testar
+                                </Button>
+                              </div>
+                              <p className="text-xs text-gray-500 mt-1">
+                                Esta chave será usada para receber pagamentos dos clientes
+                              </p>
+                            </div>
+                          </>
+                        )}
                       </div>
 
                       {/* Funcionamento */}

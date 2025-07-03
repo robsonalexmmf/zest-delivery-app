@@ -293,7 +293,7 @@ const ConfiguracaoEntregadorPage: React.FC = () => {
                         </Button>
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
-                        Esta chave será usada para receber seus pagamentos
+                        Esta chave será usada para receber seus pagamentos dos restaurantes
                       </p>
                     </div>
                   </>
