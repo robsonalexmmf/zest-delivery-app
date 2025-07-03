@@ -1,78 +1,46 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Layout/Header';
-import ConfiguracaoPagamento from '@/components/Restaurante/ConfiguracaoPagamento';
-import GerenciadorCupons from '@/components/Restaurante/GerenciadorCupons';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { 
-  DollarSign, 
-  ShoppingCart, 
-  Clock, 
-  TrendingUp,
-  Package,
-  Settings,
-  CreditCard,
-  Star,
-  Tag,
-  Upload,
-  MapPin,
-  Phone,
-  Mail,
-  Globe
-} from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DollarSign, Package, TrendingUp, Users, Clock, Settings, Upload, Bell, MapPin, Phone, Mail, Camera } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 const DashboardRestaurante: React.FC = () => {
   const [user, setUser] = useState<any>(null);
+  const [showConfigDialog, setShowConfigDialog] = useState(false);
   const [configuracoes, setConfiguracoes] = useState({
-    nomeRestaurante: '',
-    descricao: '',
+    nome: '',
     categoria: '',
     cidade: '',
-    endereco: '',
     telefone: '',
     email: '',
-    site: '',
-    horarioFuncionamento: {
-      segunda: { abertura: '08:00', fechamento: '22:00', ativo: true },
-      terca: { abertura: '08:00', fechamento: '22:00', ativo: true },
-      quarta: { abertura: '08:00', fechamento: '22:00', ativo: true },
-      quinta: { abertura: '08:00', fechamento: '22:00', ativo: true },
-      sexta: { abertura: '08:00', fechamento: '23:00', ativo: true },
-      sabado: { abertura: '10:00', fechamento: '23:00', ativo: true },
-      domingo: { abertura: '10:00', fechamento: '22:00', ativo: false }
+    endereco: '',
+    descricao: '',
+    horario_funcionamento: {
+      abertura: '08:00',
+      fechamento: '22:00'
     },
-    tempoPreparoMedio: 30,
-    valorMinimoEntrega: 20,
-    taxaEntrega: 5,
-    raioEntrega: 10,
-    aceitaPedidosOnline: true,
+    taxa_entrega: 5.00,
+    tempo_preparo_medio: 30,
     logo: '',
-    bannerPrincipal: ''
+    banner: '',
+    aceita_pix: true,
+    aceita_cartao: true,
+    aceita_dinheiro: true
   });
-  const [logoPreview, setLogoPreview] = useState<string>('');
-  const [bannerPreview, setBannerPreview] = useState<string>('');
+  
+  const [logoPreview, setLogoPreview] = useState('');
+  const [bannerPreview, setBannerPreview] = useState('');
   const navigate = useNavigate();
-
-  const categorias = [
-    'Pizza', 'Hambúrguer', 'Japonês', 'Chinês', 'Italiana', 'Brasileira',
-    'Mexicana', 'Árabe', 'Vegetariana', 'Doces', 'Açaí', 'Lanches',
-    'Saudável', 'Fast Food', 'Regional', 'Frutos do Mar'
-  ];
-
-  const cidades = [
-    'São Paulo', 'Rio de Janeiro', 'Belo Horizonte', 'Salvador', 'Fortaleza',
-    'Brasília', 'Curitiba', 'Recife', 'Porto Alegre', 'Manaus',
-    'Belém', 'Goiânia', 'Campinas', 'São Luís', 'São Gonçalo'
-  ];
 
   useEffect(() => {
     const userData = localStorage.getItem('zdelivery_user');
@@ -90,129 +58,77 @@ const DashboardRestaurante: React.FC = () => {
   }, [navigate]);
 
   const carregarConfiguracoes = () => {
-    const configSalvas = localStorage.getItem('config_restaurante');
+    // Carregar configurações salvas ou usar dados do usuário
+    const configSalvas = localStorage.getItem('restaurant_config');
     if (configSalvas) {
       const config = JSON.parse(configSalvas);
       setConfiguracoes(config);
-      setLogoPreview(config.logo);
-      setBannerPreview(config.bannerPrincipal);
+      setLogoPreview(config.logo || '');
+      setBannerPreview(config.banner || '');
+    }
+  };
+
+  // Dados mockados para estatísticas
+  const estatisticas = {
+    vendas_hoje: 1247.80,
+    pedidos_hoje: 23,
+    ticket_medio: 54.25,
+    crescimento: 15.2,
+    pedidos_pendentes: 5,
+    avaliacoes: 4.7,
+    tempo_medio_entrega: 28
+  };
+
+  const categorias = [
+    'Pizzaria', 'Hamburgueria', 'Comida Japonesa', 'Comida Italiana', 
+    'Comida Brasileira', 'Lanches', 'Doces & Sobremesas', 'Bebidas',
+    'Comida Saudável', 'Comida Mexicana', 'Frutos do Mar', 'Churrascaria'
+  ];
+
+  const cidades = [
+    'São Paulo', 'Rio de Janeiro', 'Belo Horizonte', 'Salvador', 
+    'Brasília', 'Fortaleza', 'Curitiba', 'Recife', 'Porto Alegre', 
+    'Manaus', 'Belém', 'Goiânia', 'Campinas', 'São Luis'
+  ];
+
+  const handleImageUpload = (type: 'logo' | 'banner', e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const imageUrl = event.target?.result as string;
+        
+        if (type === 'logo') {
+          setLogoPreview(imageUrl);
+          setConfiguracoes(prev => ({ ...prev, logo: imageUrl }));
+        } else {
+          setBannerPreview(imageUrl);
+          setConfiguracoes(prev => ({ ...prev, banner: imageUrl }));
+        }
+        
+        toast({
+          title: `${type === 'logo' ? 'Logo' : 'Banner'} carregado!`,
+          description: 'A imagem foi carregada com sucesso.',
+        });
+      };
+      reader.readAsDataURL(file);
     }
   };
 
   const salvarConfiguracoes = () => {
-    localStorage.setItem('config_restaurante', JSON.stringify(configuracoes));
+    localStorage.setItem('restaurant_config', JSON.stringify(configuracoes));
+    
+    // Atualizar dados do usuário
+    const updatedUser = { ...user, ...configuracoes };
+    setUser(updatedUser);
+    localStorage.setItem('zdelivery_user', JSON.stringify(updatedUser));
+    
     toast({
       title: 'Configurações salvas!',
-      description: 'As configurações do restaurante foram atualizadas com sucesso.',
+      description: 'As configurações do restaurante foram atualizadas.',
     });
-  };
-
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const imageUrl = event.target?.result as string;
-        setConfiguracoes({ ...configuracoes, logo: imageUrl });
-        setLogoPreview(imageUrl);
-        
-        toast({
-          title: 'Logo carregada!',
-          description: 'A logo foi carregada com sucesso.',
-        });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const imageUrl = event.target?.result as string;
-        setConfiguracoes({ ...configuracoes, bannerPrincipal: imageUrl });
-        setBannerPreview(imageUrl);
-        
-        toast({
-          title: 'Banner carregado!',
-          description: 'O banner foi carregado com sucesso.',
-        });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleHorarioChange = (dia: string, campo: string, valor: string | boolean) => {
-    setConfiguracoes({
-      ...configuracoes,
-      horarioFuncionamento: {
-        ...configuracoes.horarioFuncionamento,
-        [dia]: {
-          ...configuracoes.horarioFuncionamento[dia as keyof typeof configuracoes.horarioFuncionamento],
-          [campo]: valor
-        }
-      }
-    });
-  };
-
-  // Dados mockados para demonstração
-  const estatisticas = {
-    vendas: {
-      hoje: 1250.80,
-      semana: 8750.40,
-      mes: 32450.60
-    },
-    pedidos: {
-      pendentes: 5,
-      preparando: 3,
-      prontos: 2,
-      total_hoje: 23
-    },
-    produtos: {
-      total: 15,
-      disponivel: 12,
-      indisponivel: 3
-    },
-    avaliacao: 4.5
-  };
-
-  const pedidosRecentes = [
-    {
-      id: '#001',
-      cliente: 'João Silva',
-      valor: 85.90,
-      status: 'preparando',
-      tempo: '15min',
-      produtos: ['Pizza Margherita', 'Coca-Cola 350ml']
-    },
-    {
-      id: '#002',
-      cliente: 'Maria Santos',
-      valor: 42.50,
-      status: 'aceito',
-      tempo: '5min',
-      produtos: ['Pizza Calabresa']
-    },
-    {
-      id: '#003',
-      cliente: 'Carlos Silva',
-      valor: 125.80,
-      status: 'saiu_entrega',
-      tempo: '45min',
-      produtos: ['Pizza Portuguesa', 'Pizza 4 Queijos', 'Refrigerante 2L']
-    }
-  ];
-
-  const getStatusBadge = (status: string) => {
-    const statusMap = {
-      'aceito': { color: 'bg-blue-100 text-blue-800', label: 'Aceito' },
-      'preparando': { color: 'bg-yellow-100 text-yellow-800', label: 'Preparando' },
-      'pronto': { color: 'bg-green-100 text-green-800', label: 'Pronto' },
-      'saiu_entrega': { color: 'bg-purple-100 text-purple-800', label: 'Em Entrega' },
-      'entregue': { color: 'bg-gray-100 text-gray-800', label: 'Entregue' }
-    };
-    return statusMap[status as keyof typeof statusMap] || statusMap.aceito;
+    
+    setShowConfigDialog(false);
   };
 
   if (!user) return null;
@@ -222,548 +138,502 @@ const DashboardRestaurante: React.FC = () => {
       <Header userType="restaurante" userName={user.nome} />
       
       <main className="container mx-auto px-4 py-8">
+        {/* Header do Dashboard */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">
-            Dashboard do Restaurante
-          </h1>
-          <p className="text-gray-600">
-            Acompanhe o desempenho do seu negócio
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-800 mb-2">
+                Dashboard - {user.nome}
+              </h1>
+              <p className="text-gray-600">
+                Gerencie seu restaurante e acompanhe o desempenho
+              </p>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <Button 
+                variant="outline"
+                onClick={() => navigate('/pedidos-restaurante')}
+              >
+                <Bell className="w-4 h-4 mr-2" />
+                {estatisticas.pedidos_pendentes} Pedidos Pendentes
+              </Button>
+              
+              <Dialog open={showConfigDialog} onOpenChange={setShowConfigDialog}>
+                <DialogTrigger asChild>
+                  <Button className="bg-red-600 hover:bg-red-700">
+                    <Settings className="w-4 h-4 mr-2" />
+                    Configurações
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Configurações Gerais do Restaurante</DialogTitle>
+                  </DialogHeader>
+                  
+                  <div className="space-y-6">
+                    {/* Informações Básicas */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold">Informações Básicas</h3>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="nome">Nome do Restaurante</Label>
+                          <Input
+                            id="nome"
+                            value={configuracoes.nome}
+                            onChange={(e) => setConfiguracoes(prev => ({...prev, nome: e.target.value}))}
+                            placeholder="Nome do seu restaurante"
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="categoria">Categoria</Label>
+                          <Select value={configuracoes.categoria} onValueChange={(value) => setConfiguracoes(prev => ({...prev, categoria: value}))}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione a categoria" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {categorias.map(cat => (
+                                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="cidade">Cidade</Label>
+                          <Select value={configuracoes.cidade} onValueChange={(value) => setConfiguracoes(prev => ({...prev, cidade: value}))}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione a cidade" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {cidades.map(cidade => (
+                                <SelectItem key={cidade} value={cidade}>{cidade}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="telefone">Telefone</Label>
+                          <Input
+                            id="telefone"
+                            value={configuracoes.telefone}
+                            onChange={(e) => setConfiguracoes(prev => ({...prev, telefone: e.target.value}))}
+                            placeholder="(11) 99999-9999"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="email">Email</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={configuracoes.email}
+                          onChange={(e) => setConfiguracoes(prev => ({...prev, email: e.target.value}))}
+                          placeholder="contato@restaurante.com"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="endereco">Endereço Completo</Label>
+                        <Input
+                          id="endereco"
+                          value={configuracoes.endereco}
+                          onChange={(e) => setConfiguracoes(prev => ({...prev, endereco: e.target.value}))}
+                          placeholder="Rua, número, bairro, CEP"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="descricao">Descrição</Label>
+                        <Textarea
+                          id="descricao"
+                          value={configuracoes.descricao}
+                          onChange={(e) => setConfiguracoes(prev => ({...prev, descricao: e.target.value}))}
+                          placeholder="Descreva seu restaurante..."
+                          rows={3}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Imagens */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold">Imagens do Restaurante</h3>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>Logo do Restaurante</Label>
+                          <div className="space-y-3">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleImageUpload('logo', e)}
+                              className="hidden"
+                              id="logo-upload"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => document.getElementById('logo-upload')?.click()}
+                              className="w-full"
+                            >
+                              <Camera className="w-4 h-4 mr-2" />
+                              Carregar Logo
+                            </Button>
+                            {logoPreview && (
+                              <img src={logoPreview} alt="Logo" className="w-20 h-20 object-cover rounded-lg border" />
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <Label>Banner/Capa</Label>
+                          <div className="space-y-3">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleImageUpload('banner', e)}
+                              className="hidden"
+                              id="banner-upload"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => document.getElementById('banner-upload')?.click()}
+                              className="w-full"
+                            >
+                              <Camera className="w-4 h-4 mr-2" />
+                              Carregar Banner
+                            </Button>
+                            {bannerPreview && (
+                              <img src={bannerPreview} alt="Banner" className="w-32 h-20 object-cover rounded-lg border" />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Funcionamento */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold">Funcionamento</h3>
+                      
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <Label htmlFor="abertura">Horário de Abertura</Label>
+                          <Input
+                            id="abertura"
+                            type="time"
+                            value={configuracoes.horario_funcionamento.abertura}
+                            onChange={(e) => setConfiguracoes(prev => ({
+                              ...prev, 
+                              horario_funcionamento: {
+                                ...prev.horario_funcionamento,
+                                abertura: e.target.value
+                              }
+                            }))}
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="fechamento">Horário de Fechamento</Label>
+                          <Input
+                            id="fechamento"
+                            type="time"
+                            value={configuracoes.horario_funcionamento.fechamento}
+                            onChange={(e) => setConfiguracoes(prev => ({
+                              ...prev, 
+                              horario_funcionamento: {
+                                ...prev.horario_funcionamento,
+                                fechamento: e.target.value
+                              }
+                            }))}
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="tempo_preparo">Tempo Médio de Preparo (min)</Label>
+                          <Input
+                            id="tempo_preparo"
+                            type="number"
+                            value={configuracoes.tempo_preparo_medio}
+                            onChange={(e) => setConfiguracoes(prev => ({...prev, tempo_preparo_medio: parseInt(e.target.value)}))}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Entrega e Pagamento */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold">Entrega e Pagamento</h3>
+                      
+                      <div>
+                        <Label htmlFor="taxa_entrega">Taxa de Entrega (R$)</Label>
+                        <Input
+                          id="taxa_entrega"
+                          type="number"
+                          step="0.01"
+                          value={configuracoes.taxa_entrega}
+                          onChange={(e) => setConfiguracoes(prev => ({...prev, taxa_entrega: parseFloat(e.target.value)}))}
+                        />
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <Label>Formas de Pagamento Aceitas</Label>
+                        <div className="space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              checked={configuracoes.aceita_pix}
+                              onCheckedChange={(checked) => setConfiguracoes(prev => ({...prev, aceita_pix: checked}))}
+                            />
+                            <Label>PIX</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              checked={configuracoes.aceita_cartao}
+                              onCheckedChange={(checked) => setConfiguracoes(prev => ({...prev, aceita_cartao: checked}))}
+                            />
+                            <Label>Cartão de Crédito/Débito</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              checked={configuracoes.aceita_dinheiro}
+                              onCheckedChange={(checked) => setConfiguracoes(prev => ({...prev, aceita_dinheiro: checked}))}
+                            />
+                            <Label>Dinheiro</Label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 pt-4">
+                      <Button onClick={salvarConfiguracoes} className="flex-1 bg-red-600 hover:bg-red-700">
+                        Salvar Configurações
+                      </Button>
+                      <Button variant="outline" onClick={() => setShowConfigDialog(false)}>
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
         </div>
 
-        <Tabs defaultValue="resumo" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="resumo">Resumo</TabsTrigger>
-            <TabsTrigger value="cupons">
-              <Tag className="w-4 h-4 mr-2" />
-              Cupons
-            </TabsTrigger>
-            <TabsTrigger value="pagamentos">
-              <CreditCard className="w-4 h-4 mr-2" />
-              Pagamentos
-            </TabsTrigger>
-            <TabsTrigger value="configuracoes">
-              <Settings className="w-4 h-4 mr-2" />
-              Configurações
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="resumo" className="space-y-6">
-            {/* Cards de Estatísticas */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <Card>
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-medium text-gray-600">
-                      Vendas Hoje
-                    </CardTitle>
-                    <DollarSign className="w-4 h-4 text-green-600" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-green-600">
-                    R$ {estatisticas.vendas.hoje.toFixed(2)}
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    +12% em relação a ontem
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-medium text-gray-600">
-                      Pedidos Hoje
-                    </CardTitle>
-                    <Package className="w-4 h-4 text-blue-600" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-blue-600">
-                    {estatisticas.pedidos.total_hoje}
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    {estatisticas.pedidos.pendentes} pendentes
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-medium text-gray-600">
-                      Tempo Médio
-                    </CardTitle>
-                    <Clock className="w-4 h-4 text-orange-600" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-orange-600">
-                    32min
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    Preparação + entrega
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-medium text-gray-600">
-                      Avaliação
-                    </CardTitle>
-                    <Star className="w-4 h-4 text-yellow-600" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-yellow-600">
-                    {estatisticas.avaliacao}
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    Baseado em 234 avaliações
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Pedidos Recentes */}
-            <div className="grid lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2">
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle>Pedidos Recentes</CardTitle>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => navigate('/pedidos-restaurante')}
-                      >
-                        Ver Todos
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {pedidosRecentes.map(pedido => (
-                        <div key={pedido.id} className="border-b pb-4 last:border-b-0">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-3">
-                              <span className="font-semibold">{pedido.id}</span>
-                              <span className="text-gray-600">{pedido.cliente}</span>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <Badge className={getStatusBadge(pedido.status).color}>
-                                {getStatusBadge(pedido.status).label}
-                              </Badge>
-                              <span className="text-sm text-gray-500">{pedido.tempo}</span>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <div className="text-sm text-gray-600">
-                              {pedido.produtos.join(', ')}
-                            </div>
-                            <div className="font-bold text-green-600">
-                              R$ {pedido.valor.toFixed(2)}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+        {/* Cards de Estatísticas */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium text-gray-600">
+                  Vendas Hoje
+                </CardTitle>
+                <DollarSign className="w-4 h-4 text-green-600" />
               </div>
-
-              {/* Ações Rápidas */}
-              <div>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Ações Rápidas</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <Button 
-                      className="w-full bg-red-600 hover:bg-red-700"
-                      onClick={() => navigate('/produtos')}
-                    >
-                      Gerenciar Produtos
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      className="w-full"
-                      onClick={() => navigate('/pedidos-restaurante')}
-                    >
-                      Ver Pedidos
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      className="w-full"
-                      onClick={() => navigate('/relatorios')}
-                    >
-                      Relatórios
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {/* Status do Restaurante */}
-                <Card className="mt-6">
-                  <CardHeader>
-                    <CardTitle>Status do Restaurante</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span>Status:</span>
-                        <Badge className="bg-green-100 text-green-800">Aberto</Badge>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>Produtos:</span>
-                        <span>{estatisticas.produtos.disponivel}/{estatisticas.produtos.total}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>Pedidos na fila:</span>
-                        <span>{estatisticas.pedidos.pendentes + estatisticas.pedidos.preparando}</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">
+                R$ {estatisticas.vendas_hoje.toFixed(2)}
               </div>
-            </div>
-          </TabsContent>
+              <p className="text-xs text-green-600 flex items-center mt-1">
+                <TrendingUp className="w-3 h-3 mr-1" />
+                +{estatisticas.crescimento}% vs ontem
+              </p>
+            </CardContent>
+          </Card>
 
-          <TabsContent value="cupons">
-            <Card>
-              <CardHeader>
-                <CardTitle>Gerenciamento de Cupons</CardTitle>
-                <p className="text-sm text-gray-600">
-                  Crie e gerencie cupons de desconto para seus clientes
-                </p>
-              </CardHeader>
-              <CardContent>
-                <GerenciadorCupons />
-              </CardContent>
-            </Card>
-          </TabsContent>
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium text-gray-600">
+                  Pedidos Hoje
+                </CardTitle>
+                <Package className="w-4 h-4 text-blue-600" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">
+                {estatisticas.pedidos_hoje}
+              </div>
+              <p className="text-xs text-gray-500">
+                Ticket médio: R$ {estatisticas.ticket_medio.toFixed(2)}
+              </p>
+            </CardContent>
+          </Card>
 
-          <TabsContent value="pagamentos">
-            <Card>
-              <CardHeader>
-                <CardTitle>Configuração de Pagamentos</CardTitle>
-                <p className="text-sm text-gray-600">
-                  Configure como você deseja receber os pagamentos dos pedidos
-                </p>
-              </CardHeader>
-              <CardContent>
-                <ConfiguracaoPagamento />
-              </CardContent>
-            </Card>
-          </TabsContent>
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium text-gray-600">
+                  Avaliação
+                </CardTitle>
+                <Users className="w-4 h-4 text-yellow-600" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-yellow-600">
+                {estatisticas.avaliacoes}/5
+              </div>
+              <p className="text-xs text-gray-500">
+                Baseado em 156 avaliações
+              </p>
+            </CardContent>
+          </Card>
 
-          <TabsContent value="configuracoes">
-            <div className="grid gap-6">
-              {/* Informações Básicas */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Informações do Restaurante</CardTitle>
-                  <p className="text-sm text-gray-600">
-                    Configure as informações básicas do seu restaurante
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="nomeRestaurante">Nome do Restaurante</Label>
-                      <Input
-                        id="nomeRestaurante"
-                        value={configuracoes.nomeRestaurante}
-                        onChange={(e) => setConfiguracoes({...configuracoes, nomeRestaurante: e.target.value})}
-                        placeholder="Nome do seu restaurante"
-                      />
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium text-gray-600">
+                  Tempo Médio
+                </CardTitle>
+                <Clock className="w-4 h-4 text-purple-600" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-purple-600">
+                {estatisticas.tempo_medio_entrega}min
+              </div>
+              <p className="text-xs text-gray-500">
+                Preparo + entrega
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Ações Rápidas */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <Button 
+            onClick={() => navigate('/produtos')}
+            className="h-16 bg-red-600 hover:bg-red-700"
+          >
+            <Package className="w-5 h-5 mr-2" />
+            Gerenciar Produtos
+          </Button>
+          
+          <Button 
+            onClick={() => navigate('/pedidos-restaurante')}
+            variant="outline"
+            className="h-16"
+          >
+            <Bell className="w-5 h-5 mr-2" />
+            Ver Pedidos ({estatisticas.pedidos_pendentes})
+          </Button>
+          
+          <Button 
+            onClick={() => navigate('/relatorios')}
+            variant="outline"
+            className="h-16"
+          >
+            <TrendingUp className="w-5 h-5 mr-2" />
+            Relatórios
+          </Button>
+          
+          <Button 
+            variant="outline"
+            className="h-16"
+            onClick={() => setShowConfigDialog(true)}
+          >
+            <Settings className="w-5 h-5 mr-2" />
+            Configurações
+          </Button>
+        </div>
+
+        {/* Informações do Restaurante */}
+        {(configuracoes.nome || configuracoes.categoria || configuracoes.cidade) && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Informações do Restaurante</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  {configuracoes.nome && (
+                    <div className="flex items-center space-x-2">
+                      <strong>Nome:</strong> <span>{configuracoes.nome}</span>
                     </div>
-                    
-                    <div>
-                      <Label htmlFor="categoria">Categoria</Label>
-                      <Select 
-                        value={configuracoes.categoria} 
-                        onValueChange={(value) => setConfiguracoes({...configuracoes, categoria: value})}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione uma categoria" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {categorias.map(cat => (
-                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                  )}
+                  {configuracoes.categoria && (
+                    <div className="flex items-center space-x-2">
+                      <strong>Categoria:</strong> <Badge>{configuracoes.categoria}</Badge>
                     </div>
+                  )}
+                  {configuracoes.cidade && (
+                    <div className="flex items-center space-x-2">
+                      <MapPin className="w-4 h-4" />
+                      <strong>Cidade:</strong> <span>{configuracoes.cidade}</span>
+                    </div>
+                  )}
+                  {configuracoes.telefone && (
+                    <div className="flex items-center space-x-2">
+                      <Phone className="w-4 h-4" />
+                      <strong>Telefone:</strong> <span>{configuracoes.telefone}</span>
+                    </div>
+                  )}
+                  {configuracoes.email && (
+                    <div className="flex items-center space-x-2">
+                      <Mail className="w-4 h-4" />
+                      <strong>Email:</strong> <span>{configuracoes.email}</span>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="space-y-3">
+                  {configuracoes.horario_funcionamento && (
+                    <div className="flex items-center space-x-2">
+                      <Clock className="w-4 h-4" />
+                      <strong>Funcionamento:</strong> 
+                      <span>{configuracoes.horario_funcionamento.abertura} às {configuracoes.horario_funcionamento.fechamento}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center space-x-2">
+                    <DollarSign className="w-4 h-4" />
+                    <strong>Taxa de Entrega:</strong> <span>R$ {configuracoes.taxa_entrega.toFixed(2)}</span>
                   </div>
-
-                  <div>
-                    <Label htmlFor="descricao">Descrição</Label>
-                    <Textarea
-                      id="descricao"
-                      value={configuracoes.descricao}
-                      onChange={(e) => setConfiguracoes({...configuracoes, descricao: e.target.value})}
-                      placeholder="Descreva seu restaurante"
-                      rows={3}
-                    />
+                  <div className="flex items-center space-x-2">
+                    <strong>Preparo Médio:</strong> <span>{configuracoes.tempo_preparo_medio} minutos</span>
                   </div>
+                </div>
+              </div>
+              
+              {configuracoes.descricao && (
+                <div className="mt-4 pt-4 border-t">
+                  <strong>Descrição:</strong>
+                  <p className="mt-2 text-gray-600">{configuracoes.descricao}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="cidade">Cidade</Label>
-                      <Select 
-                        value={configuracoes.cidade} 
-                        onValueChange={(value) => setConfiguracoes({...configuracoes, cidade: value})}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione uma cidade" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {cidades.map(cidade => (
-                            <SelectItem key={cidade} value={cidade}>{cidade}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="endereco">Endereço</Label>
-                      <Input
-                        id="endereco"
-                        value={configuracoes.endereco}
-                        onChange={(e) => setConfiguracoes({...configuracoes, endereco: e.target.value})}
-                        placeholder="Endereço completo"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid md:grid-cols-3 gap-4">
-                    <div>
-                      <Label htmlFor="telefone">Telefone</Label>
-                      <Input
-                        id="telefone"
-                        value={configuracoes.telefone}
-                        onChange={(e) => setConfiguracoes({...configuracoes, telefone: e.target.value})}
-                        placeholder="(11) 99999-9999"
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="email">E-mail</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={configuracoes.email}
-                        onChange={(e) => setConfiguracoes({...configuracoes, email: e.target.value})}
-                        placeholder="contato@restaurante.com"
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="site">Site</Label>
-                      <Input
-                        id="site"
-                        value={configuracoes.site}
-                        onChange={(e) => setConfiguracoes({...configuracoes, site: e.target.value})}
-                        placeholder="www.restaurante.com"
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Imagens */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Imagens do Restaurante</CardTitle>
-                  <p className="text-sm text-gray-600">
-                    Faça upload da logo e banner do seu restaurante
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div>
-                    <Label>Logo do Restaurante</Label>
-                    <div className="flex items-center space-x-4 mt-2">
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoUpload}
-                        className="hidden"
-                        id="logo-upload"
-                      />
-                      <Button
-                        variant="outline"
-                        onClick={() => document.getElementById('logo-upload')?.click()}
-                      >
-                        <Upload className="w-4 h-4 mr-2" />
-                        Upload Logo
-                      </Button>
-                      {logoPreview && (
-                        <div className="flex items-center space-x-2">
-                          <img 
-                            src={logoPreview} 
-                            alt="Logo preview" 
-                            className="w-12 h-12 object-cover rounded-lg border"
-                          />
-                          <span className="text-sm text-green-600">Logo carregada</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label>Banner Principal</Label>
-                    <div className="flex items-center space-x-4 mt-2">
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleBannerUpload}
-                        className="hidden"
-                        id="banner-upload"
-                      />
-                      <Button
-                        variant="outline"
-                        onClick={() => document.getElementById('banner-upload')?.click()}
-                      >
-                        <Upload className="w-4 h-4 mr-2" />
-                        Upload Banner
-                      </Button>
-                      {bannerPreview && (
-                        <div className="flex items-center space-x-2">
-                          <img 
-                            src={bannerPreview} 
-                            alt="Banner preview" 
-                            className="w-20 h-12 object-cover rounded-lg border"
-                          />
-                          <span className="text-sm text-green-600">Banner carregado</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Horário de Funcionamento */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Horário de Funcionamento</CardTitle>
-                  <p className="text-sm text-gray-600">
-                    Configure os horários de funcionamento do seu restaurante
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {Object.entries(configuracoes.horarioFuncionamento).map(([dia, horario]) => (
-                      <div key={dia} className="flex items-center space-x-4">
-                        <div className="w-20">
-                          <span className="capitalize font-medium">{dia}</span>
-                        </div>
-                        <Switch
-                          checked={horario.ativo}
-                          onCheckedChange={(checked) => handleHorarioChange(dia, 'ativo', checked)}
-                        />
-                        {horario.ativo && (
-                          <>
-                            <Input
-                              type="time"
-                              value={horario.abertura}
-                              onChange={(e) => handleHorarioChange(dia, 'abertura', e.target.value)}
-                              className="w-32"
-                            />
-                            <span>às</span>
-                            <Input
-                              type="time"
-                              value={horario.fechamento}
-                              onChange={(e) => handleHorarioChange(dia, 'fechamento', e.target.value)}
-                              className="w-32"
-                            />
-                          </>
-                        )}
-                        {!horario.ativo && (
-                          <span className="text-gray-500">Fechado</span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Configurações de Entrega */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Configurações de Entrega</CardTitle>
-                  <p className="text-sm text-gray-600">
-                    Configure as opções de entrega do seu restaurante
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="tempoPreparoMedio">Tempo de Preparo Médio (min)</Label>
-                      <Input
-                        id="tempoPreparoMedio"
-                        type="number"
-                        value={configuracoes.tempoPreparoMedio}
-                        onChange={(e) => setConfiguracoes({...configuracoes, tempoPreparoMedio: parseInt(e.target.value)})}
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="valorMinimoEntrega">Valor Mínimo para Entrega (R$)</Label>
-                      <Input
-                        id="valorMinimoEntrega"
-                        type="number"
-                        step="0.01"
-                        value={configuracoes.valorMinimoEntrega}
-                        onChange={(e) => setConfiguracoes({...configuracoes, valorMinimoEntrega: parseFloat(e.target.value)})}
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="taxaEntrega">Taxa de Entrega (R$)</Label>
-                      <Input
-                        id="taxaEntrega"
-                        type="number"
-                        step="0.01"
-                        value={configuracoes.taxaEntrega}
-                        onChange={(e) => setConfiguracoes({...configuracoes, taxaEntrega: parseFloat(e.target.value)})}
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="raioEntrega">Raio de Entrega (km)</Label>
-                      <Input
-                        id="raioEntrega"
-                        type="number"
-                        value={configuracoes.raioEntrega}
-                        onChange={(e) => setConfiguracoes({...configuracoes, raioEntrega: parseInt(e.target.value)})}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mt-4 flex items-center space-x-2">
-                    <Switch
-                      checked={configuracoes.aceitaPedidosOnline}
-                      onCheckedChange={(checked) => setConfiguracoes({...configuracoes, aceitaPedidosOnline: checked})}
-                    />
-                    <Label>Aceitar pedidos online</Label>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Botão Salvar */}
-              <div className="flex justify-end">
-                <Button 
-                  onClick={salvarConfiguracoes}
-                  className="bg-red-600 hover:bg-red-700"
-                >
-                  Salvar Configurações
-                </Button>
+        {/* Resumo Rápido */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Resumo do Dia</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                <span>Faturamento do dia</span>
+                <span className="font-bold text-green-600">R$ {estatisticas.vendas_hoje.toFixed(2)}</span>
+              </div>
+              
+              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                <span>Pedidos realizados</span>
+                <span className="font-bold text-blue-600">{estatisticas.pedidos_hoje}</span>
+              </div>
+              
+              <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+                <span>Pedidos pendentes</span>
+                <span className="font-bold text-orange-600">{estatisticas.pedidos_pendentes}</span>
               </div>
             </div>
-          </TabsContent>
-        </Tabs>
+          </CardContent>
+        </Card>
       </main>
     </div>
   );

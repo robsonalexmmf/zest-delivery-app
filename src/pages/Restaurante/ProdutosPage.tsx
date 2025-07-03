@@ -10,8 +10,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Edit, Trash2, Package, Settings, Upload, ImageIcon } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, Settings, ImageIcon } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import ImageUpload from '@/components/common/ImageUpload';
 
 const ProdutosPage: React.FC = () => {
   const [user, setUser] = useState<any>(null);
@@ -20,7 +21,6 @@ const ProdutosPage: React.FC = () => {
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [showAdicionaisDialog, setShowAdicionaisDialog] = useState(false);
   const [produtoAdicionais, setProdutoAdicionais] = useState<any>(null);
-  const [imagemPreview, setImagemPreview] = useState<string>('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -39,6 +39,13 @@ const ProdutosPage: React.FC = () => {
   }, [navigate]);
 
   const carregarProdutos = () => {
+    // Primeiro tentar carregar do localStorage
+    const produtosSalvos = localStorage.getItem('restaurant_products');
+    if (produtosSalvos) {
+      setProdutos(JSON.parse(produtosSalvos));
+      return;
+    }
+
     // Produtos mockados com adicionais
     const produtosMockados = [
       {
@@ -84,6 +91,7 @@ const ProdutosPage: React.FC = () => {
       }
     ];
     setProdutos(produtosMockados);
+    localStorage.setItem('restaurant_products', JSON.stringify(produtosMockados));
   };
 
   const [formData, setFormData] = useState({
@@ -102,35 +110,32 @@ const ProdutosPage: React.FC = () => {
     opcoes: [{ nome: '', preco: '' }]
   });
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Simular upload de imagem
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const imageUrl = event.target?.result as string;
-        setFormData({ ...formData, imagem: imageUrl });
-        setImagemPreview(imageUrl);
-        
-        toast({
-          title: 'Imagem carregada!',
-          description: 'A imagem foi carregada com sucesso.',
-        });
-      };
-      reader.readAsDataURL(file);
-    }
+  const salvarProdutos = (novosProdutos: any[]) => {
+    setProdutos(novosProdutos);
+    localStorage.setItem('restaurant_products', JSON.stringify(novosProdutos));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!formData.nome || !formData.descricao || !formData.preco || !formData.categoria) {
+      toast({
+        title: 'Campos obrigatórios',
+        description: 'Preencha todos os campos obrigatórios.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
     if (editingProduct) {
       // Editar produto existente
-      setProdutos(produtos.map(p => 
+      const produtosAtualizados = produtos.map(p => 
         p.id === editingProduct.id 
           ? { ...p, ...formData, preco: parseFloat(formData.preco) }
           : p
-      ));
+      );
+      salvarProdutos(produtosAtualizados);
+      
       toast({
         title: 'Produto atualizado!',
         description: 'O produto foi atualizado com sucesso.',
@@ -143,13 +148,18 @@ const ProdutosPage: React.FC = () => {
         preco: parseFloat(formData.preco),
         adicionais: []
       };
-      setProdutos([...produtos, novoProduto]);
+      salvarProdutos([...produtos, novoProduto]);
+      
       toast({
         title: 'Produto adicionado!',
         description: 'O produto foi adicionado ao cardápio.',
       });
     }
 
+    resetForm();
+  };
+
+  const resetForm = () => {
     setFormData({
       nome: '',
       descricao: '',
@@ -158,7 +168,6 @@ const ProdutosPage: React.FC = () => {
       disponivel: true,
       imagem: ''
     });
-    setImagemPreview('');
     setEditingProduct(null);
     setIsDialogOpen(false);
   };
@@ -173,12 +182,13 @@ const ProdutosPage: React.FC = () => {
       disponivel: produto.disponivel,
       imagem: produto.imagem
     });
-    setImagemPreview(produto.imagem);
     setIsDialogOpen(true);
   };
 
   const handleDelete = (produtoId: string) => {
-    setProdutos(produtos.filter(p => p.id !== produtoId));
+    const produtosAtualizados = produtos.filter(p => p.id !== produtoId);
+    salvarProdutos(produtosAtualizados);
+    
     toast({
       title: 'Produto removido!',
       description: 'O produto foi removido do cardápio.',
@@ -186,9 +196,10 @@ const ProdutosPage: React.FC = () => {
   };
 
   const toggleDisponibilidade = (produtoId: string) => {
-    setProdutos(produtos.map(p => 
+    const produtosAtualizados = produtos.map(p => 
       p.id === produtoId ? { ...p, disponivel: !p.disponivel } : p
-    ));
+    );
+    salvarProdutos(produtosAtualizados);
   };
 
   const handleAdicionais = (produto: any) => {
@@ -230,11 +241,12 @@ const ProdutosPage: React.FC = () => {
       }))
     };
 
-    setProdutos(produtos.map(p => 
+    const produtosAtualizados = produtos.map(p => 
       p.id === produtoAdicionais.id 
         ? { ...p, adicionais: [...(p.adicionais || []), adicional] }
         : p
-    ));
+    );
+    salvarProdutos(produtosAtualizados);
 
     setNovoAdicional({
       nome: '',
@@ -250,14 +262,19 @@ const ProdutosPage: React.FC = () => {
   };
 
   const removerAdicional = (produtoId: string, adicionalId: string) => {
-    setProdutos(produtos.map(p => 
+    const produtosAtualizados = produtos.map(p => 
       p.id === produtoId 
         ? { ...p, adicionais: p.adicionais?.filter((a: any) => a.id !== adicionalId) }
         : p
-    ));
+    );
+    salvarProdutos(produtosAtualizados);
   };
 
   const categorias = Array.from(new Set(produtos.map(p => p.categoria)));
+  const categoriasDisponiveis = [
+    'Pizzas', 'Hamburgueres', 'Lanches', 'Bebidas', 'Doces', 'Sobremesas',
+    'Pratos Principais', 'Entradas', 'Saladas', 'Massas', 'Grelhados'
+  ];
 
   if (!user) return null;
 
@@ -284,7 +301,7 @@ const ProdutosPage: React.FC = () => {
                   Novo Produto
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>
                     {editingProduct ? 'Editar Produto' : 'Novo Produto'}
@@ -292,98 +309,64 @@ const ProdutosPage: React.FC = () => {
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <Label htmlFor="nome">Nome do Produto</Label>
+                    <Label htmlFor="nome">Nome do Produto *</Label>
                     <Input
                       id="nome"
                       value={formData.nome}
                       onChange={(e) => setFormData({...formData, nome: e.target.value})}
+                      placeholder="Ex: Pizza Margherita"
                       required
                     />
                   </div>
                   
                   <div>
-                    <Label htmlFor="descricao">Descrição</Label>
+                    <Label htmlFor="descricao">Descrição *</Label>
                     <Textarea
                       id="descricao"
                       value={formData.descricao}
                       onChange={(e) => setFormData({...formData, descricao: e.target.value})}
+                      placeholder="Descreva os ingredientes e características"
                       required
+                      rows={3}
                     />
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="preco">Preço</Label>
+                      <Label htmlFor="preco">Preço (R$) *</Label>
                       <Input
                         id="preco"
                         type="number"
                         step="0.01"
+                        min="0"
                         value={formData.preco}
                         onChange={(e) => setFormData({...formData, preco: e.target.value})}
+                        placeholder="0.00"
                         required
                       />
                     </div>
                     
                     <div>
-                      <Label htmlFor="categoria">Categoria</Label>
-                      <Input
-                        id="categoria"
-                        value={formData.categoria}
-                        onChange={(e) => setFormData({...formData, categoria: e.target.value})}
-                        required
-                      />
+                      <Label htmlFor="categoria">Categoria *</Label>
+                      <Select value={formData.categoria} onValueChange={(value) => setFormData({...formData, categoria: value})}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categoriasDisponiveis.map(cat => (
+                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                   
-                  <div>
-                    <Label htmlFor="imagem">Imagem do Produto</Label>
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-3">
-                        <Input
-                          id="imagem"
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageUpload}
-                          className="hidden"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => document.getElementById('imagem')?.click()}
-                          className="flex-1"
-                        >
-                          <Upload className="w-4 h-4 mr-2" />
-                          Fazer Upload da Imagem
-                        </Button>
-                      </div>
-                      {imagemPreview && (
-                        <div className="flex items-center space-x-3">
-                          <img 
-                            src={imagemPreview} 
-                            alt="Preview" 
-                            className="w-16 h-16 object-cover rounded-lg border"
-                          />
-                          <div className="flex-1">
-                            <p className="text-sm text-green-600 font-medium">
-                              Imagem carregada com sucesso!
-                            </p>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setImagemPreview('');
-                                setFormData({...formData, imagem: ''});
-                              }}
-                              className="mt-1 text-red-600"
-                            >
-                              Remover
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <ImageUpload
+                    label="Imagem do Produto"
+                    value={formData.imagem}
+                    onChange={(imageUrl) => setFormData({...formData, imagem: imageUrl})}
+                    maxSizeMB={3}
+                  />
                   
                   <div className="flex items-center space-x-2">
                     <Switch
@@ -401,14 +384,7 @@ const ProdutosPage: React.FC = () => {
                     <Button 
                       type="button" 
                       variant="outline" 
-                      onClick={() => {
-                        setIsDialogOpen(false);
-                        setEditingProduct(null);
-                        setImagemPreview('');
-                        setFormData({
-                          nome: '', descricao: '', preco: '', categoria: '', disponivel: true, imagem: ''
-                        });
-                      }}
+                      onClick={resetForm}
                     >
                       Cancelar
                     </Button>
@@ -434,7 +410,7 @@ const ProdutosPage: React.FC = () => {
                           <div className="flex items-start justify-between mb-3">
                             <div className="flex-1">
                               <h3 className="font-semibold text-lg">{produto.nome}</h3>
-                              <p className="text-gray-600 text-sm mb-2">{produto.descricao}</p>
+                              <p className="text-gray-600 text-sm mb-2 line-clamp-2">{produto.descricao}</p>
                               <p className="font-bold text-green-600 text-xl">
                                 R$ {produto.preco.toFixed(2)}
                               </p>
@@ -444,11 +420,13 @@ const ProdutosPage: React.FC = () => {
                                 </p>
                               )}
                             </div>
-                            <img 
-                              src={produto.imagem} 
-                              alt={produto.nome}
-                              className="w-16 h-16 object-cover rounded-lg ml-3"
-                            />
+                            {produto.imagem && (
+                              <img 
+                                src={produto.imagem} 
+                                alt={produto.nome}
+                                className="w-16 h-16 object-cover rounded-lg ml-3 border"
+                              />
+                            )}
                           </div>
                           
                           <div className="flex items-center justify-between mb-3">
