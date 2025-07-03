@@ -4,9 +4,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { MapPin, Plus, Edit, Trash2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
@@ -26,21 +25,16 @@ interface Endereco {
 interface GerenciadorEnderecosProps {
   isOpen: boolean;
   onClose: () => void;
-  onEnderecoSelecionado: (endereco: Endereco) => void;
-  enderecoAtual?: string;
+  onSelectEndereco: (endereco: Endereco) => void;
 }
 
 const GerenciadorEnderecos: React.FC<GerenciadorEnderecosProps> = ({
   isOpen,
   onClose,
-  onEnderecoSelecionado,
-  enderecoAtual
+  onSelectEndereco
 }) => {
   const [enderecos, setEnderecos] = useState<Endereco[]>([]);
-  const [enderecoSelecionado, setEnderecoSelecionado] = useState<string>('');
-  const [mostrarFormulario, setMostrarFormulario] = useState(false);
-  const [editandoEndereco, setEditandoEndereco] = useState<Endereco | null>(null);
-  
+  const [editando, setEditando] = useState<string | null>(null);
   const [novoEndereco, setNovoEndereco] = useState({
     nome: '',
     endereco: '',
@@ -54,106 +48,99 @@ const GerenciadorEnderecos: React.FC<GerenciadorEnderecosProps> = ({
   });
 
   useEffect(() => {
-    carregarEnderecos();
+    // Carregar endereços salvos
+    const enderecosSalvos = localStorage.getItem('zdelivery_enderecos');
+    if (enderecosSalvos) {
+      setEnderecos(JSON.parse(enderecosSalvos));
+    }
   }, []);
 
-  const carregarEnderecos = () => {
-    const endercosSalvos = localStorage.getItem('zdelivery_enderecos');
-    if (endercosSalvos) {
-      const enderecos = JSON.parse(endercosSalvos);
-      setEnderecos(enderecos);
-      
-      // Selecionar o principal por padrão
-      const principal = enderecos.find((e: Endereco) => e.principal);
-      if (principal) {
-        setEnderecoSelecionado(principal.id);
-      }
-    }
+  const salvarEnderecos = (novosEnderecos: Endereco[]) => {
+    setEnderecos(novosEnderecos);
+    localStorage.setItem('zdelivery_enderecos', JSON.stringify(novosEnderecos));
   };
 
-  const salvarEndereco = () => {
-    if (!novoEndereco.nome || !novoEndereco.endereco || !novoEndereco.numero || !novoEndereco.bairro || !novoEndereco.cidade || !novoEndereco.cep) {
+  const handleSalvarEndereco = () => {
+    if (!novoEndereco.nome || !novoEndereco.endereco || !novoEndereco.numero) {
       toast({
         title: 'Campos obrigatórios',
-        description: 'Preencha todos os campos obrigatórios.',
+        description: 'Nome, endereço e número são obrigatórios.',
         variant: 'destructive'
       });
       return;
     }
 
-    let enderecosAtualizados = [...enderecos];
+    const endereco: Endereco = {
+      id: editando || Date.now().toString(),
+      ...novoEndereco,
+      complemento: novoEndereco.complemento || undefined,
+      referencia: novoEndereco.referencia || undefined
+    };
+
+    let novosEnderecos: Endereco[];
     
-    if (editandoEndereco) {
-      // Editando endereço existente
-      enderecosAtualizados = enderecos.map(e => 
-        e.id === editandoEndereco.id 
-          ? { ...novoEndereco, id: editandoEndereco.id }
-          : e
-      );
+    if (editando) {
+      novosEnderecos = enderecos.map(e => e.id === editando ? endereco : e);
     } else {
-      // Novo endereço
-      const endereco: Endereco = {
-        ...novoEndereco,
-        id: Date.now().toString()
-      };
-      enderecosAtualizados.push(endereco);
+      novosEnderecos = [...enderecos, endereco];
     }
 
-    // Se é o primeiro endereço ou foi marcado como principal
-    if (enderecosAtualizados.length === 1 || novoEndereco.principal) {
-      enderecosAtualizados = enderecosAtualizados.map(e => ({
-        ...e,
-        principal: e.id === (editandoEndereco?.id || enderecosAtualizados[enderecosAtualizados.length - 1].id)
-      }));
+    // Se for principal, remover principal dos outros
+    if (endereco.principal) {
+      novosEnderecos = novosEnderecos.map(e => 
+        e.id === endereco.id ? e : { ...e, principal: false }
+      );
     }
 
-    setEnderecos(enderecosAtualizados);
-    localStorage.setItem('zdelivery_enderecos', JSON.stringify(enderecosAtualizados));
+    salvarEnderecos(novosEnderecos);
     
     toast({
-      title: editandoEndereco ? 'Endereço atualizado!' : 'Endereço salvo!',
-      description: 'Endereço foi salvo com sucesso.',
+      title: 'Endereço salvo!',
+      description: editando ? 'Endereço atualizado com sucesso.' : 'Novo endereço adicionado.',
     });
 
-    limparFormulario();
-  };
-
-  const limparFormulario = () => {
     setNovoEndereco({
-      nome: '', endereco: '', numero: '', complemento: '', 
-      bairro: '', cidade: '', cep: '', referencia: '', principal: false
+      nome: '',
+      endereco: '',
+      numero: '',
+      complemento: '',
+      bairro: '',
+      cidade: '',
+      cep: '',
+      referencia: '',
+      principal: false
     });
-    setMostrarFormulario(false);
-    setEditandoEndereco(null);
+    setEditando(null);
   };
 
-  const editarEndereco = (endereco: Endereco) => {
-    setEditandoEndereco(endereco);
-    setNovoEndereco(endereco);
-    setMostrarFormulario(true);
+  const handleEditarEndereco = (endereco: Endereco) => {
+    setNovoEndereco({
+      nome: endereco.nome,
+      endereco: endereco.endereco,
+      numero: endereco.numero,
+      complemento: endereco.complemento || '',
+      bairro: endereco.bairro,
+      cidade: endereco.cidade,
+      cep: endereco.cep,
+      referencia: endereco.referencia || '',
+      principal: endereco.principal
+    });
+    setEditando(endereco.id);
   };
 
-  const removerEndereco = (id: string) => {
-    const enderecosAtualizados = enderecos.filter(e => e.id !== id);
-    setEnderecos(enderecosAtualizados);
-    localStorage.setItem('zdelivery_enderecos', JSON.stringify(enderecosAtualizados));
+  const handleExcluirEndereco = (id: string) => {
+    const novosEnderecos = enderecos.filter(e => e.id !== id);
+    salvarEnderecos(novosEnderecos);
     
     toast({
-      title: 'Endereço removido!',
-      description: 'Endereço foi removido com sucesso.',
+      title: 'Endereço excluído',
+      description: 'O endereço foi removido com sucesso.',
     });
   };
 
-  const confirmarSelecao = () => {
-    const endereco = enderecos.find(e => e.id === enderecoSelecionado);
-    if (endereco) {
-      onEnderecoSelecionado(endereco);
-      onClose();
-    }
-  };
-
-  const formatarEnderecoCompleto = (endereco: Endereco) => {
-    return `${endereco.endereco}, ${endereco.numero}${endereco.complemento ? `, ${endereco.complemento}` : ''} - ${endereco.bairro}, ${endereco.cidade} - ${endereco.cep}`;
+  const handleSelecionarEndereco = (endereco: Endereco) => {
+    onSelectEndereco(endereco);
+    onClose();
   };
 
   return (
@@ -162,190 +149,181 @@ const GerenciadorEnderecos: React.FC<GerenciadorEnderecosProps> = ({
         <DialogHeader>
           <DialogTitle>Gerenciar Endereços</DialogTitle>
         </DialogHeader>
+        
+        <div className="space-y-6">
+          {/* Lista de endereços */}
+          <div>
+            <h4 className="font-medium mb-4">Seus Endereços</h4>
+            <div className="space-y-3">
+              {enderecos.map(endereco => (
+                <Card key={endereco.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start">
+                      <div 
+                        className="flex-1"
+                        onClick={() => handleSelecionarEndereco(endereco)}
+                      >
+                        <div className="flex items-center space-x-2 mb-2">
+                          <MapPin className="w-4 h-4" />
+                          <span className="font-medium">{endereco.nome}</span>
+                          {endereco.principal && (
+                            <Badge variant="outline">Principal</Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          {endereco.endereco}, {endereco.numero}
+                          {endereco.complemento && `, ${endereco.complemento}`}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {endereco.bairro}, {endereco.cidade} - {endereco.cep}
+                        </p>
+                        {endereco.referencia && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            Referência: {endereco.referencia}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex space-x-2 ml-4">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditarEndereco(endereco)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleExcluirEndereco(endereco.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
 
-        <div className="space-y-4">
-          {!mostrarFormulario ? (
-            <>
-              {/* Lista de Endereços */}
-              {enderecos.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="font-medium">Seus Endereços:</h3>
-                  <RadioGroup value={enderecoSelecionado} onValueChange={setEnderecoSelecionado}>
-                    {enderecos.map(endereco => (
-                      <Card key={endereco.id} className={endereco.principal ? 'border-red-200 bg-red-50' : ''}>
-                        <CardContent className="p-4">
-                          <div className="flex items-start space-x-3">
-                            <RadioGroupItem value={endereco.id} className="mt-1" />
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <p className="font-medium flex items-center">
-                                    <MapPin className="w-4 h-4 mr-1" />
-                                    {endereco.nome}
-                                    {endereco.principal && (
-                                      <span className="bg-red-600 text-white text-xs px-2 py-1 rounded ml-2">
-                                        Principal
-                                      </span>
-                                    )}
-                                  </p>
-                                  <p className="text-sm text-gray-600 mt-1">
-                                    {formatarEnderecoCompleto(endereco)}
-                                  </p>
-                                  {endereco.referencia && (
-                                    <p className="text-xs text-gray-500 mt-1">
-                                      Referência: {endereco.referencia}
-                                    </p>
-                                  )}
-                                </div>
-                                <div className="flex space-x-2">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => editarEndereco(endereco)}
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => removerEndereco(endereco.id)}
-                                    className="text-red-600 hover:text-red-700"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </RadioGroup>
-                </div>
-              )}
-
-              {/* Botões */}
-              <div className="flex space-x-3 pt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => setMostrarFormulario(true)}
-                  className="flex-1"
+          {/* Formulário de novo endereço */}
+          <div className="border-t pt-6">
+            <h4 className="font-medium mb-4">
+              {editando ? 'Editar Endereço' : 'Adicionar Novo Endereço'}
+            </h4>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="nome">Nome do Endereço *</Label>
+                <Input
+                  id="nome"
+                  value={novoEndereco.nome}
+                  onChange={(e) => setNovoEndereco({...novoEndereco, nome: e.target.value})}
+                  placeholder="Casa, Trabalho, etc."
+                />
+              </div>
+              <div>
+                <Label htmlFor="cep">CEP</Label>
+                <Input
+                  id="cep"
+                  value={novoEndereco.cep}
+                  onChange={(e) => setNovoEndereco({...novoEndereco, cep: e.target.value})}
+                  placeholder="00000-000"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <Label htmlFor="endereco">Endereço *</Label>
+                <Input
+                  id="endereco"
+                  value={novoEndereco.endereco}
+                  onChange={(e) => setNovoEndereco({...novoEndereco, endereco: e.target.value})}
+                  placeholder="Rua, Avenida, etc."
+                />
+              </div>
+              <div>
+                <Label htmlFor="numero">Número *</Label>
+                <Input
+                  id="numero"
+                  value={novoEndereco.numero}
+                  onChange={(e) => setNovoEndereco({...novoEndereco, numero: e.target.value})}
+                  placeholder="123"
+                />
+              </div>
+              <div>
+                <Label htmlFor="complemento">Complemento</Label>
+                <Input
+                  id="complemento"
+                  value={novoEndereco.complemento}
+                  onChange={(e) => setNovoEndereco({...novoEndereco, complemento: e.target.value})}
+                  placeholder="Apto 101, Bloco A, etc."
+                />
+              </div>
+              <div>
+                <Label htmlFor="bairro">Bairro</Label>
+                <Input
+                  id="bairro"
+                  value={novoEndereco.bairro}
+                  onChange={(e) => setNovoEndereco({...novoEndereco, bairro: e.target.value})}
+                  placeholder="Centro"
+                />
+              </div>
+              <div>
+                <Label htmlFor="cidade">Cidade</Label>
+                <Input
+                  id="cidade"
+                  value={novoEndereco.cidade}
+                  onChange={(e) => setNovoEndereco({...novoEndereco, cidade: e.target.value})}
+                  placeholder="São Paulo"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <Label htmlFor="referencia">Ponto de Referência</Label>
+                <Input
+                  id="referencia"
+                  value={novoEndereco.referencia}
+                  onChange={(e) => setNovoEndereco({...novoEndereco, referencia: e.target.value})}
+                  placeholder="Próximo ao shopping, em frente à padaria, etc."
+                />
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-2 mt-4">
+              <input
+                type="checkbox"
+                id="principal"
+                checked={novoEndereco.principal}
+                onChange={(e) => setNovoEndereco({...novoEndereco, principal: e.target.checked})}
+              />
+              <Label htmlFor="principal">Definir como endereço principal</Label>
+            </div>
+            
+            <div className="flex space-x-3 mt-6">
+              <Button onClick={handleSalvarEndereco} className="bg-red-600 hover:bg-red-700">
+                <Plus className="w-4 h-4 mr-2" />
+                {editando ? 'Atualizar' : 'Adicionar'} Endereço
+              </Button>
+              {editando && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setEditando(null);
+                    setNovoEndereco({
+                      nome: '',
+                      endereco: '',
+                      numero: '',
+                      complemento: '',
+                      bairro: '',
+                      cidade: '',
+                      cep: '',
+                      referencia: '',
+                      principal: false
+                    });
+                  }}
                 >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Novo Endereço
+                  Cancelar
                 </Button>
-                {enderecos.length > 0 && (
-                  <Button
-                    onClick={confirmarSelecao}
-                    className="flex-1 bg-red-600 hover:bg-red-700"
-                    disabled={!enderecoSelecionado}
-                  >
-                    Usar Este Endereço
-                  </Button>
-                )}
-              </div>
-            </>
-          ) : (
-            <>
-              {/* Formulário de Novo/Editar Endereço */}
-              <div className="space-y-4">
-                <h3 className="font-medium">
-                  {editandoEndereco ? 'Editar Endereço' : 'Novo Endereço'}
-                </h3>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="col-span-2">
-                    <Label>Nome do Endereço *</Label>
-                    <Input
-                      placeholder="Ex: Casa, Trabalho, Faculdade"
-                      value={novoEndereco.nome}
-                      onChange={(e) => setNovoEndereco({...novoEndereco, nome: e.target.value})}
-                    />
-                  </div>
-                  
-                  <div className="col-span-2">
-                    <Label>Rua/Avenida *</Label>
-                    <Input
-                      placeholder="Nome da rua"
-                      value={novoEndereco.endereco}
-                      onChange={(e) => setNovoEndereco({...novoEndereco, endereco: e.target.value})}
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label>Número *</Label>
-                    <Input
-                      placeholder="123"
-                      value={novoEndereco.numero}
-                      onChange={(e) => setNovoEndereco({...novoEndereco, numero: e.target.value})}
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label>Complemento</Label>
-                    <Input
-                      placeholder="Apto, Casa, Bloco"
-                      value={novoEndereco.complemento}
-                      onChange={(e) => setNovoEndereco({...novoEndereco, complemento: e.target.value})}
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label>Bairro *</Label>
-                    <Input
-                      placeholder="Nome do bairro"
-                      value={novoEndereco.bairro}
-                      onChange={(e) => setNovoEndereco({...novoEndereco, bairro: e.target.value})}
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label>Cidade *</Label>
-                    <Input
-                      placeholder="Nome da cidade"
-                      value={novoEndereco.cidade}
-                      onChange={(e) => setNovoEndereco({...novoEndereco, cidade: e.target.value})}
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label>CEP *</Label>
-                    <Input
-                      placeholder="00000-000"
-                      value={novoEndereco.cep}
-                      onChange={(e) => setNovoEndereco({...novoEndereco, cep: e.target.value})}
-                    />
-                  </div>
-                  
-                  <div className="col-span-2">
-                    <Label>Ponto de Referência</Label>
-                    <Textarea
-                      placeholder="Ex: Próximo ao mercado, em frente à farmácia"
-                      value={novoEndereco.referencia}
-                      onChange={(e) => setNovoEndereco({...novoEndereco, referencia: e.target.value})}
-                      rows={2}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex space-x-3">
-                  <Button
-                    variant="outline"
-                    onClick={limparFormulario}
-                    className="flex-1"
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    onClick={salvarEndereco}
-                    className="flex-1 bg-red-600 hover:bg-red-700"
-                  >
-                    {editandoEndereco ? 'Atualizar' : 'Salvar'} Endereço
-                  </Button>
-                </div>
-              </div>
-            </>
-          )}
+              )}
+            </div>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

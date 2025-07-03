@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Layout/Header';
@@ -7,10 +6,21 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { DollarSign, Package, Clock, MapPin, Truck } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 const DashboardEntregador: React.FC = () => {
   const [user, setUser] = useState<any>(null);
   const [disponivel, setDisponivel] = useState(true);
+  const [entregasAndamento, setEntregasAndamento] = useState([
+    {
+      id: '#E004',
+      restaurante: 'Pasta & Amore',
+      cliente: 'Maria Santos',
+      endereco: 'Rua Italia, 321',
+      status: 'coletado',
+      tempo_estimado: '8min'
+    }
+  ]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -74,21 +84,31 @@ const DashboardEntregador: React.FC = () => {
     }
   ];
 
-  const entregasAndamento = [
-    {
-      id: '#E004',
-      restaurante: 'Pasta & Amore',
-      cliente: 'Maria Santos',
-      endereco: 'Rua Italia, 321',
-      status: 'coletado',
-      tempo_estimado: '8min'
-    }
-  ];
-
   const handleAceitarEntrega = (entregaId: string) => {
-    // Simular aceite da entrega
-    console.log(`Entrega ${entregaId} aceita`);
-    // Aqui normalmente removeria da lista e adicionaria às entregas em andamento
+    toast({
+      title: 'Entrega aceita!',
+      description: `Você aceitou a entrega ${entregaId}. Dirija-se ao restaurante.`,
+    });
+  };
+
+  const handleConfirmarEntrega = (entregaId: string) => {
+    setEntregasAndamento(prev => prev.filter(e => e.id !== entregaId));
+    
+    toast({
+      title: 'Entrega confirmada!',
+      description: `Entrega ${entregaId} foi marcada como concluída.`,
+    });
+  };
+
+  const handleVerNoMapa = (endereco: string) => {
+    toast({
+      title: 'Abrindo Google Maps',
+      description: `Carregando rota para: ${endereco}`,
+    });
+    
+    // Abrir Google Maps com o endereço
+    const enderecoEncoded = encodeURIComponent(endereco);
+    window.open(`https://maps.google.com/?q=${enderecoEncoded}`, '_blank');
   };
 
   if (!user) return null;
@@ -242,10 +262,18 @@ const DashboardEntregador: React.FC = () => {
                         </p>
                       </div>
                       <div className="mt-3 space-x-2">
-                        <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                        <Button 
+                          size="sm" 
+                          className="bg-green-600 hover:bg-green-700"
+                          onClick={() => handleConfirmarEntrega(entrega.id)}
+                        >
                           Confirmar Entrega
                         </Button>
-                        <Button size="sm" variant="outline">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleVerNoMapa(entrega.endereco)}
+                        >
                           Ver no Mapa
                         </Button>
                       </div>

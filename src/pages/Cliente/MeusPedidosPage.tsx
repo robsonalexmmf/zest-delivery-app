@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Clock, MapPin, Star, Package } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 const MeusPedidosPage: React.FC = () => {
   const [user, setUser] = useState<any>(null);
@@ -80,8 +81,24 @@ const MeusPedidosPage: React.FC = () => {
   };
 
   const handleRastrear = (pedidoId: string) => {
-    // Simular rastreamento
-    console.log(`Rastreando pedido ${pedidoId}`);
+    toast({
+      title: 'Rastreamento do Pedido',
+      description: `Abrindo rastreamento em tempo real do pedido ${pedidoId}...`,
+    });
+    
+    // Simular abertura de página de rastreamento
+    window.open(`https://maps.google.com/?q=rastreamento+pedido+${pedidoId}`, '_blank');
+  };
+
+  const handlePedirNovamente = (restaurante: string) => {
+    toast({
+      title: 'Redirecionando...',
+      description: `Levando você para ${restaurante} para fazer um novo pedido.`,
+    });
+    
+    // Navegar para a página do restaurante
+    const restauranteSlug = restaurante.toLowerCase().replace(/ /g, '-');
+    navigate(`/restaurante/${restauranteSlug}`);
   };
 
   if (!user) return null;
@@ -191,7 +208,7 @@ const MeusPedidosPage: React.FC = () => {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => navigate(`/restaurante/${pedido.restaurante.toLowerCase().replace(/ /g, '-')}`)}
+                      onClick={() => handlePedirNovamente(pedido.restaurante)}
                     >
                       Pedir Novamente
                     </Button>

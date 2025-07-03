@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Layout/Header';
@@ -132,11 +131,17 @@ const EntregasDisponiveisPage: React.FC = () => {
   };
 
   const handleVerMapa = (entrega: any) => {
-    // Simular abertura do mapa
     toast({
-      title: 'Abrindo mapa...',
+      title: 'Abrindo Google Maps',
       description: `Rota: ${entrega.restaurante.endereco} → ${entrega.cliente.endereco}`,
     });
+    
+    // Criar URL do Google Maps com múltiplos pontos (restaurante -> cliente)
+    const origem = encodeURIComponent(entrega.restaurante.endereco);
+    const destino = encodeURIComponent(entrega.cliente.endereco);
+    const url = `https://maps.google.com/maps/dir/${origem}/${destino}`;
+    
+    window.open(url, '_blank');
   };
 
   if (!user) return null;
