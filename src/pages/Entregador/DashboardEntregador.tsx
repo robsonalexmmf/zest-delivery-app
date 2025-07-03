@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Layout/Header';
@@ -5,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { DollarSign, Package, Clock, MapPin, Truck } from 'lucide-react';
+import { DollarSign, Package, Clock, MapPin, Truck, Settings } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 const DashboardEntregador: React.FC = () => {
@@ -130,6 +131,14 @@ const DashboardEntregador: React.FC = () => {
             </div>
             
             <div className="flex items-center space-x-4">
+              <Button 
+                variant="outline" 
+                onClick={() => navigate('/configuracao-entregador')}
+                className="flex items-center"
+              >
+                <Settings className="w-4 h-4 mr-2" />
+                Configurações
+              </Button>
               <div className="flex items-center space-x-2">
                 <span className="text-sm font-medium">
                   {disponivel ? 'Disponível' : 'Indisponível'}
