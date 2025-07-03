@@ -1,40 +1,32 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Truck, Store, Users, ShoppingCart, Check } from 'lucide-react';
-import { mercadoPagoService } from '@/services/mercadoPagoService';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Truck, Store, Users, ShoppingCart, Check, Copy } from 'lucide-react';
+import { pagamentoService } from '@/services/pagamentoService';
 import { useToast } from '@/hooks/use-toast';
 
 const HomePage: React.FC = () => {
   const { toast } = useToast();
+  const [showPixModal, setShowPixModal] = useState(false);
+  const [pixCode, setPixCode] = useState('');
+  const [currentPayment, setCurrentPayment] = useState<any>(null);
 
   const handlePlanSubscription = async (planType: string, price: number) => {
-    if (!mercadoPagoService.isConfigured()) {
-      toast({
-        title: "Mercado Pago não configurado",
-        description: "Configure o Mercado Pago para processar pagamentos",
-        variant: "destructive"
-      });
-      return;
-    }
-
     try {
-      const pixPayment = await mercadoPagoService.createPixPayment({
-        amount: price,
-        description: `Assinatura plano ${planType} - Z Delivery`,
-        orderId: `plan_${planType}_${Date.now()}`
-      });
+      const pagamento = pagamentoService.criarPagamentoPIX(planType, price);
+      
+      setCurrentPayment(pagamento);
+      setPixCode(pagamento.pixCode || '');
+      setShowPixModal(true);
 
       toast({
         title: "Pagamento PIX gerado",
         description: "Use o código PIX para completar o pagamento",
       });
-
-      // Aqui você pode abrir um modal com o QR Code do PIX
-      console.log('PIX Code:', pixPayment.pixCopyPaste);
       
     } catch (error) {
       console.error('Erro ao processar pagamento:', error);
@@ -51,6 +43,25 @@ const HomePage: React.FC = () => {
       title: "Contato comercial",
       description: "Em breve você será redirecionado para nosso time de vendas",
     });
+  };
+
+  const copyPixCode = () => {
+    navigator.clipboard.writeText(pixCode);
+    toast({
+      title: "Código copiado",
+      description: "Código PIX copiado para a área de transferência",
+    });
+  };
+
+  const simularPagamento = () => {
+    if (currentPayment) {
+      pagamentoService.simularPagamento(currentPayment.id);
+      toast({
+        title: "Pagamento confirmado!",
+        description: "Seu plano foi ativado com sucesso",
+      });
+      setShowPixModal(false);
+    }
   };
 
   return (
@@ -346,6 +357,37 @@ const HomePage: React.FC = () => {
           </div>
         </div>
       </footer>
+
+      {/* Modal PIX */}
+      <Dialog open={showPixModal} onOpenChange={setShowPixModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Pagamento PIX</DialogTitle>
+            <DialogDescription>
+              Escaneie o QR Code ou copie o código PIX para fazer o pagamento
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-gray-100 p-4 rounded-lg">
+              <p className="text-sm text-gray-600 mb-2">Código PIX:</p>
+              <div className="flex items-center space-x-2">
+                <code className="flex-1 text-xs bg-white p-2 rounded border break-all">
+                  {pixCode}
+                </code>
+                <Button size="sm" onClick={copyPixCode}>
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <div className="text-center space-y-2">
+              <p className="text-sm text-gray-600">Valor: R$ {currentPayment?.valor}</p>
+              <Button onClick={simularPagamento} className="w-full bg-green-600 hover:bg-green-700">
+                Simular Pagamento (Demo)
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
