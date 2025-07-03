@@ -75,6 +75,17 @@ const DashboardRestaurante: React.FC = () => {
     } else {
       navigate('/login');
     }
+
+    // Escutar evento customizado para abrir configurações
+    const handleOpenConfig = () => {
+      setShowConfigDialog(true);
+    };
+
+    window.addEventListener('openRestaurantConfig', handleOpenConfig);
+
+    return () => {
+      window.removeEventListener('openRestaurantConfig', handleOpenConfig);
+    };
   }, [navigate]);
 
   const carregarConfiguracoes = () => {

@@ -1,8 +1,8 @@
-
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, ShoppingCart, LogOut } from 'lucide-react';
+import { User, ShoppingCart, LogOut, Edit, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 
 interface HeaderProps {
   userType?: 'cliente' | 'restaurante' | 'entregador';
@@ -17,6 +17,28 @@ const Header: React.FC<HeaderProps> = ({ userType, userName, cartCount = 0 }) =>
     localStorage.removeItem('zdelivery_user');
     localStorage.removeItem('zdelivery_token');
     navigate('/');
+  };
+
+  const handleEditProfile = () => {
+    if (userType === 'restaurante') {
+      // Abrir modal de configurações do restaurante
+      window.dispatchEvent(new CustomEvent('openRestaurantConfig'));
+    } else if (userType === 'entregador') {
+      navigate('/configuracao-entregador');
+    } else if (userType === 'cliente') {
+      // Navegar para configurações do cliente (quando implementado)
+      console.log('Editar perfil do cliente');
+    }
+  };
+
+  const handleViewProfile = () => {
+    if (userType === 'restaurante') {
+      console.log('Ver perfil do restaurante');
+    } else if (userType === 'entregador') {
+      console.log('Ver perfil do entregador');
+    } else if (userType === 'cliente') {
+      console.log('Ver perfil do cliente');
+    }
   };
 
   return (
@@ -90,8 +112,50 @@ const Header: React.FC<HeaderProps> = ({ userType, userName, cartCount = 0 }) =>
 
             {userName && (
               <div className="flex items-center space-x-2">
-                <User className="w-5 h-5" />
-                <span className="hidden md:inline">{userName}</span>
+                <HoverCard>
+                  <HoverCardTrigger asChild>
+                    <div className="flex items-center space-x-2 cursor-pointer hover:bg-red-700 px-2 py-1 rounded transition-colors">
+                      <User className="w-5 h-5" />
+                      <span className="hidden md:inline">{userName}</span>
+                    </div>
+                  </HoverCardTrigger>
+                  <HoverCardContent className="w-56 p-4" side="bottom" align="end">
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center">
+                          <User className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{userName}</p>
+                          <p className="text-sm text-gray-500 capitalize">{userType}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="border-t pt-3 space-y-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full justify-start"
+                          onClick={handleViewProfile}
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          Ver Meu Perfil
+                        </Button>
+                        
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full justify-start"
+                          onClick={handleEditProfile}
+                        >
+                          <Edit className="w-4 h-4 mr-2" />
+                          Editar Perfil
+                        </Button>
+                      </div>
+                    </div>
+                  </HoverCardContent>
+                </HoverCard>
+                
                 <Button 
                   variant="ghost" 
                   size="sm" 
