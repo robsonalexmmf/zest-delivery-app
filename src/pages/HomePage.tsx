@@ -1,11 +1,58 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Truck, Store, Users, ShoppingCart, Check } from 'lucide-react';
+import { mercadoPagoService } from '@/services/mercadoPagoService';
+import { useToast } from '@/hooks/use-toast';
 
 const HomePage: React.FC = () => {
+  const { toast } = useToast();
+
+  const handlePlanSubscription = async (planType: string, price: number) => {
+    if (!mercadoPagoService.isConfigured()) {
+      toast({
+        title: "Mercado Pago não configurado",
+        description: "Configure o Mercado Pago para processar pagamentos",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const pixPayment = await mercadoPagoService.createPixPayment({
+        amount: price,
+        description: `Assinatura plano ${planType} - Z Delivery`,
+        orderId: `plan_${planType}_${Date.now()}`
+      });
+
+      toast({
+        title: "Pagamento PIX gerado",
+        description: "Use o código PIX para completar o pagamento",
+      });
+
+      // Aqui você pode abrir um modal com o QR Code do PIX
+      console.log('PIX Code:', pixPayment.pixCopyPaste);
+      
+    } catch (error) {
+      console.error('Erro ao processar pagamento:', error);
+      toast({
+        title: "Erro no pagamento",
+        description: "Não foi possível processar o pagamento. Tente novamente.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleContactSales = () => {
+    toast({
+      title: "Contato comercial",
+      description: "Em breve você será redirecionado para nosso time de vendas",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50">
       {/* Header */}
@@ -157,7 +204,10 @@ const HomePage: React.FC = () => {
                     <span className="text-sm">Relatórios básicos</span>
                   </li>
                 </ul>
-                <Button className="w-full bg-gray-600 hover:bg-gray-700">
+                <Button 
+                  className="w-full bg-gray-600 hover:bg-gray-700"
+                  onClick={() => handlePlanSubscription('Básico', 29)}
+                >
                   Começar Agora
                 </Button>
               </CardContent>
@@ -203,7 +253,10 @@ const HomePage: React.FC = () => {
                     <span className="text-sm">Destaque na busca</span>
                   </li>
                 </ul>
-                <Button className="w-full bg-red-600 hover:bg-red-700">
+                <Button 
+                  className="w-full bg-red-600 hover:bg-red-700"
+                  onClick={() => handlePlanSubscription('Premium', 79)}
+                >
                   Assinar Premium
                 </Button>
               </CardContent>
@@ -246,7 +299,10 @@ const HomePage: React.FC = () => {
                     <span className="text-sm">Suporte 24/7</span>
                   </li>
                 </ul>
-                <Button className="w-full bg-yellow-600 hover:bg-yellow-700">
+                <Button 
+                  className="w-full bg-yellow-600 hover:bg-yellow-700"
+                  onClick={handleContactSales}
+                >
                   Contatar Vendas
                 </Button>
               </CardContent>
@@ -279,7 +335,6 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="bg-gray-800 text-white py-8">
         <div className="container mx-auto px-4 text-center">
           <h3 className="text-2xl font-bold mb-4">Z Delivery</h3>
