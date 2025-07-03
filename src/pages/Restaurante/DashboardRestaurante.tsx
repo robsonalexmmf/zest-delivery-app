@@ -11,8 +11,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DollarSign, Package, TrendingUp, Users, Clock, Settings, Upload, Bell, MapPin, Phone, Mail, Camera } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DollarSign, Package, TrendingUp, Users, Clock, Settings, Bell, MapPin, Phone, Mail, Camera, BarChart3, PieChart, LineChart, Target } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import StatisticsChart from '@/components/common/StatisticsChart';
+import ConfiguracoesAvancadas from '@/components/Restaurante/ConfiguracoesAvancadas';
+import ImageUpload from '@/components/common/ImageUpload';
 
 const DashboardRestaurante: React.FC = () => {
   const [user, setUser] = useState<any>(null);
@@ -35,11 +39,22 @@ const DashboardRestaurante: React.FC = () => {
     banner: '',
     aceita_pix: true,
     aceita_cartao: true,
-    aceita_dinheiro: true
+    aceita_dinheiro: true,
+    // Configurações avançadas
+    raio_entrega: 5,
+    valor_minimo_pedido: 20,
+    ceps_atendimento: '',
+    categorias_personalizadas: [],
+    horarios_especiais: [],
+    notificacoes_pedidos: true,
+    notificacoes_cancelamentos: true,
+    relatorios_diarios: false,
+    entrega_propria: false,
+    retirada_local: true,
+    tempo_preparo_estimado: 30,
+    tempo_entrega_estimado: 30
   });
   
-  const [logoPreview, setLogoPreview] = useState('');
-  const [bannerPreview, setBannerPreview] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -58,17 +73,14 @@ const DashboardRestaurante: React.FC = () => {
   }, [navigate]);
 
   const carregarConfiguracoes = () => {
-    // Carregar configurações salvas ou usar dados do usuário
     const configSalvas = localStorage.getItem('restaurant_config');
     if (configSalvas) {
       const config = JSON.parse(configSalvas);
       setConfiguracoes(config);
-      setLogoPreview(config.logo || '');
-      setBannerPreview(config.banner || '');
     }
   };
 
-  // Dados mockados para estatísticas
+  // Dados mockados para estatísticas com mais detalhes
   const estatisticas = {
     vendas_hoje: 1247.80,
     pedidos_hoje: 23,
@@ -76,8 +88,41 @@ const DashboardRestaurante: React.FC = () => {
     crescimento: 15.2,
     pedidos_pendentes: 5,
     avaliacoes: 4.7,
-    tempo_medio_entrega: 28
+    tempo_medio_entrega: 28,
+    faturamento_mensal: 24680.50,
+    clientes_ativos: 156,
+    produtos_vendidos_hoje: 89,
+    taxa_cancelamento: 2.1
   };
+
+  // Dados para gráficos
+  const dadosVendasSemana = [
+    { name: 'Seg', vendas: 890, pedidos: 15 },
+    { name: 'Ter', vendas: 1200, pedidos: 22 },
+    { name: 'Qua', vendas: 980, pedidos: 18 },
+    { name: 'Qui', vendas: 1350, pedidos: 25 },
+    { name: 'Sex', vendas: 1680, pedidos: 32 },
+    { name: 'Sáb', vendas: 2100, pedidos: 38 },
+    { name: 'Dom', vendas: 1850, pedidos: 35 }
+  ];
+
+  const dadosProdutosMaisVendidos = [
+    { name: 'Pizza Margherita', value: 45 },
+    { name: 'Pizza Calabresa', value: 32 },
+    { name: 'Pizza Portuguesa', value: 28 },
+    { name: 'Pizza 4 Queijos', value: 25 },
+    { name: 'Bebidas', value: 40 }
+  ];
+
+  const dadosHorariosPico = [
+    { name: '11h', pedidos: 8 },
+    { name: '12h', pedidos: 15 },
+    { name: '13h', pedidos: 12 },
+    { name: '18h', pedidos: 18 },
+    { name: '19h', pedidos: 25 },
+    { name: '20h', pedidos: 22 },
+    { name: '21h', pedidos: 15 }
+  ];
 
   const categorias = [
     'Pizzaria', 'Hamburgueria', 'Comida Japonesa', 'Comida Italiana', 
@@ -91,35 +136,12 @@ const DashboardRestaurante: React.FC = () => {
     'Manaus', 'Belém', 'Goiânia', 'Campinas', 'São Luis'
   ];
 
-  const handleImageUpload = (type: 'logo' | 'banner', e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const imageUrl = event.target?.result as string;
-        
-        if (type === 'logo') {
-          setLogoPreview(imageUrl);
-          setConfiguracoes(prev => ({ ...prev, logo: imageUrl }));
-        } else {
-          setBannerPreview(imageUrl);
-          setConfiguracoes(prev => ({ ...prev, banner: imageUrl }));
-        }
-        
-        toast({
-          title: `${type === 'logo' ? 'Logo' : 'Banner'} carregado!`,
-          description: 'A imagem foi carregada com sucesso.',
-        });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const salvarConfiguracoes = () => {
-    localStorage.setItem('restaurant_config', JSON.stringify(configuracoes));
+  const salvarConfiguracoes = (novasConfiguracoes: any) => {
+    const configParaSalvar = { ...configuracoes, ...novasConfiguracoes };
+    setConfiguracoes(configParaSalvar);
+    localStorage.setItem('restaurant_config', JSON.stringify(configParaSalvar));
     
-    // Atualizar dados do usuário
-    const updatedUser = { ...user, ...configuracoes };
+    const updatedUser = { ...user, ...configParaSalvar };
     setUser(updatedUser);
     localStorage.setItem('zdelivery_user', JSON.stringify(updatedUser));
     
@@ -127,7 +149,10 @@ const DashboardRestaurante: React.FC = () => {
       title: 'Configurações salvas!',
       description: 'As configurações do restaurante foram atualizadas.',
     });
-    
+  };
+
+  const salvarConfiguracaoBasica = () => {
+    salvarConfiguracoes(configuracoes);
     setShowConfigDialog(false);
   };
 
@@ -166,266 +191,244 @@ const DashboardRestaurante: React.FC = () => {
                     Configurações
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle>Configurações Gerais do Restaurante</DialogTitle>
+                    <DialogTitle>Configurações do Restaurante</DialogTitle>
                   </DialogHeader>
                   
-                  <div className="space-y-6">
-                    {/* Informações Básicas */}
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold">Informações Básicas</h3>
-                      
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="nome">Nome do Restaurante</Label>
-                          <Input
-                            id="nome"
-                            value={configuracoes.nome}
-                            onChange={(e) => setConfiguracoes(prev => ({...prev, nome: e.target.value}))}
-                            placeholder="Nome do seu restaurante"
-                          />
-                        </div>
+                  <Tabs defaultValue="basico" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="basico">Configurações Básicas</TabsTrigger>
+                      <TabsTrigger value="avancadas">Configurações Avançadas</TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="basico" className="space-y-6">
+                      {/* Informações Básicas */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold">Informações Básicas</h3>
                         
-                        <div>
-                          <Label htmlFor="categoria">Categoria</Label>
-                          <Select value={configuracoes.categoria} onValueChange={(value) => setConfiguracoes(prev => ({...prev, categoria: value}))}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione a categoria" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {categorias.map(cat => (
-                                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="cidade">Cidade</Label>
-                          <Select value={configuracoes.cidade} onValueChange={(value) => setConfiguracoes(prev => ({...prev, cidade: value}))}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione a cidade" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {cidades.map(cidade => (
-                                <SelectItem key={cidade} value={cidade}>{cidade}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
-                        <div>
-                          <Label htmlFor="telefone">Telefone</Label>
-                          <Input
-                            id="telefone"
-                            value={configuracoes.telefone}
-                            onChange={(e) => setConfiguracoes(prev => ({...prev, telefone: e.target.value}))}
-                            placeholder="(11) 99999-9999"
-                          />
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="email">Email</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          value={configuracoes.email}
-                          onChange={(e) => setConfiguracoes(prev => ({...prev, email: e.target.value}))}
-                          placeholder="contato@restaurante.com"
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="endereco">Endereço Completo</Label>
-                        <Input
-                          id="endereco"
-                          value={configuracoes.endereco}
-                          onChange={(e) => setConfiguracoes(prev => ({...prev, endereco: e.target.value}))}
-                          placeholder="Rua, número, bairro, CEP"
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="descricao">Descrição</Label>
-                        <Textarea
-                          id="descricao"
-                          value={configuracoes.descricao}
-                          onChange={(e) => setConfiguracoes(prev => ({...prev, descricao: e.target.value}))}
-                          placeholder="Descreva seu restaurante..."
-                          rows={3}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Imagens */}
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold">Imagens do Restaurante</h3>
-                      
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label>Logo do Restaurante</Label>
-                          <div className="space-y-3">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => handleImageUpload('logo', e)}
-                              className="hidden"
-                              id="logo-upload"
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="nome">Nome do Restaurante</Label>
+                            <Input
+                              id="nome"
+                              value={configuracoes.nome}
+                              onChange={(e) => setConfiguracoes(prev => ({...prev, nome: e.target.value}))}
+                              placeholder="Nome do seu restaurante"
                             />
-                            <Button
-                              type="button"
-                              variant="outline"
-                              onClick={() => document.getElementById('logo-upload')?.click()}
-                              className="w-full"
-                            >
-                              <Camera className="w-4 h-4 mr-2" />
-                              Carregar Logo
-                            </Button>
-                            {logoPreview && (
-                              <img src={logoPreview} alt="Logo" className="w-20 h-20 object-cover rounded-lg border" />
-                            )}
+                          </div>
+                          
+                          <div>
+                            <Label htmlFor="categoria">Categoria</Label>
+                            <Select value={configuracoes.categoria} onValueChange={(value) => setConfiguracoes(prev => ({...prev, categoria: value}))}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione a categoria" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {categorias.map(cat => (
+                                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="cidade">Cidade</Label>
+                            <Select value={configuracoes.cidade} onValueChange={(value) => setConfiguracoes(prev => ({...prev, cidade: value}))}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione a cidade" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {cidades.map(cidade => (
+                                  <SelectItem key={cidade} value={cidade}>{cidade}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <div>
+                            <Label htmlFor="telefone">Telefone</Label>
+                            <Input
+                              id="telefone"
+                              value={configuracoes.telefone}
+                              onChange={(e) => setConfiguracoes(prev => ({...prev, telefone: e.target.value}))}
+                              placeholder="(11) 99999-9999"
+                            />
                           </div>
                         </div>
                         
                         <div>
-                          <Label>Banner/Capa</Label>
-                          <div className="space-y-3">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => handleImageUpload('banner', e)}
-                              className="hidden"
-                              id="banner-upload"
+                          <Label htmlFor="email">Email</Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            value={configuracoes.email}
+                            onChange={(e) => setConfiguracoes(prev => ({...prev, email: e.target.value}))}
+                            placeholder="contato@restaurante.com"
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="endereco">Endereço Completo</Label>
+                          <Input
+                            id="endereco"
+                            value={configuracoes.endereco}
+                            onChange={(e) => setConfiguracoes(prev => ({...prev, endereco: e.target.value}))}
+                            placeholder="Rua, número, bairro, CEP"
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="descricao">Descrição</Label>
+                          <Textarea
+                            id="descricao"
+                            value={configuracoes.descricao}
+                            onChange={(e) => setConfiguracoes(prev => ({...prev, descricao: e.target.value}))}
+                            placeholder="Descreva seu restaurante..."
+                            rows={3}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Imagens */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold">Imagens do Restaurante</h3>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <ImageUpload
+                            label="Logo do Restaurante"
+                            value={configuracoes.logo}
+                            onChange={(imageUrl) => setConfiguracoes(prev => ({...prev, logo: imageUrl}))}
+                            maxSizeMB={2}
+                          />
+                          
+                          <ImageUpload
+                            label="Banner/Capa"
+                            value={configuracoes.banner}
+                            onChange={(imageUrl) => setConfiguracoes(prev => ({...prev, banner: imageUrl}))}
+                            maxSizeMB={3}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Funcionamento */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold">Funcionamento</h3>
+                        
+                        <div className="grid grid-cols-3 gap-4">
+                          <div>
+                            <Label htmlFor="abertura">Horário de Abertura</Label>
+                            <Input
+                              id="abertura"
+                              type="time"
+                              value={configuracoes.horario_funcionamento.abertura}
+                              onChange={(e) => setConfiguracoes(prev => ({
+                                ...prev, 
+                                horario_funcionamento: {
+                                  ...prev.horario_funcionamento,
+                                  abertura: e.target.value
+                                }
+                              }))}
                             />
-                            <Button
-                              type="button"
-                              variant="outline"
-                              onClick={() => document.getElementById('banner-upload')?.click()}
-                              className="w-full"
-                            >
-                              <Camera className="w-4 h-4 mr-2" />
-                              Carregar Banner
-                            </Button>
-                            {bannerPreview && (
-                              <img src={bannerPreview} alt="Banner" className="w-32 h-20 object-cover rounded-lg border" />
-                            )}
+                          </div>
+                          
+                          <div>
+                            <Label htmlFor="fechamento">Horário de Fechamento</Label>
+                            <Input
+                              id="fechamento"
+                              type="time"
+                              value={configuracoes.horario_funcionamento.fechamento}
+                              onChange={(e) => setConfiguracoes(prev => ({
+                                ...prev, 
+                                horario_funcionamento: {
+                                  ...prev.horario_funcionamento,
+                                  fechamento: e.target.value
+                                }
+                              }))}
+                            />
+                          </div>
+                          
+                          <div>
+                            <Label htmlFor="tempo_preparo">Tempo Médio de Preparo (min)</Label>
+                            <Input
+                              id="tempo_preparo"
+                              type="number"
+                              value={configuracoes.tempo_preparo_medio}
+                              onChange={(e) => setConfiguracoes(prev => ({...prev, tempo_preparo_medio: parseInt(e.target.value)}))}
+                            />
                           </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Funcionamento */}
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold">Funcionamento</h3>
-                      
-                      <div className="grid grid-cols-3 gap-4">
-                        <div>
-                          <Label htmlFor="abertura">Horário de Abertura</Label>
-                          <Input
-                            id="abertura"
-                            type="time"
-                            value={configuracoes.horario_funcionamento.abertura}
-                            onChange={(e) => setConfiguracoes(prev => ({
-                              ...prev, 
-                              horario_funcionamento: {
-                                ...prev.horario_funcionamento,
-                                abertura: e.target.value
-                              }
-                            }))}
-                          />
-                        </div>
+                      {/* Entrega e Pagamento */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold">Entrega e Pagamento</h3>
                         
                         <div>
-                          <Label htmlFor="fechamento">Horário de Fechamento</Label>
+                          <Label htmlFor="taxa_entrega">Taxa de Entrega (R$)</Label>
                           <Input
-                            id="fechamento"
-                            type="time"
-                            value={configuracoes.horario_funcionamento.fechamento}
-                            onChange={(e) => setConfiguracoes(prev => ({
-                              ...prev, 
-                              horario_funcionamento: {
-                                ...prev.horario_funcionamento,
-                                fechamento: e.target.value
-                              }
-                            }))}
-                          />
-                        </div>
-                        
-                        <div>
-                          <Label htmlFor="tempo_preparo">Tempo Médio de Preparo (min)</Label>
-                          <Input
-                            id="tempo_preparo"
+                            id="taxa_entrega"
                             type="number"
-                            value={configuracoes.tempo_preparo_medio}
-                            onChange={(e) => setConfiguracoes(prev => ({...prev, tempo_preparo_medio: parseInt(e.target.value)}))}
+                            step="0.01"
+                            value={configuracoes.taxa_entrega}
+                            onChange={(e) => setConfiguracoes(prev => ({...prev, taxa_entrega: parseFloat(e.target.value)}))}
                           />
                         </div>
-                      </div>
-                    </div>
-
-                    {/* Entrega e Pagamento */}
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold">Entrega e Pagamento</h3>
-                      
-                      <div>
-                        <Label htmlFor="taxa_entrega">Taxa de Entrega (R$)</Label>
-                        <Input
-                          id="taxa_entrega"
-                          type="number"
-                          step="0.01"
-                          value={configuracoes.taxa_entrega}
-                          onChange={(e) => setConfiguracoes(prev => ({...prev, taxa_entrega: parseFloat(e.target.value)}))}
-                        />
-                      </div>
-                      
-                      <div className="space-y-3">
-                        <Label>Formas de Pagamento Aceitas</Label>
-                        <div className="space-y-2">
-                          <div className="flex items-center space-x-2">
-                            <Switch
-                              checked={configuracoes.aceita_pix}
-                              onCheckedChange={(checked) => setConfiguracoes(prev => ({...prev, aceita_pix: checked}))}
-                            />
-                            <Label>PIX</Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Switch
-                              checked={configuracoes.aceita_cartao}
-                              onCheckedChange={(checked) => setConfiguracoes(prev => ({...prev, aceita_cartao: checked}))}
-                            />
-                            <Label>Cartão de Crédito/Débito</Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Switch
-                              checked={configuracoes.aceita_dinheiro}
-                              onCheckedChange={(checked) => setConfiguracoes(prev => ({...prev, aceita_dinheiro: checked}))}
-                            />
-                            <Label>Dinheiro</Label>
+                        
+                        <div className="space-y-3">
+                          <Label>Formas de Pagamento Aceitas</Label>
+                          <div className="space-y-2">
+                            <div className="flex items-center space-x-2">
+                              <Switch
+                                checked={configuracoes.aceita_pix}
+                                onCheckedChange={(checked) => setConfiguracoes(prev => ({...prev, aceita_pix: checked}))}
+                              />
+                              <Label>PIX</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Switch
+                                checked={configuracoes.aceita_cartao}
+                                onCheckedChange={(checked) => setConfiguracoes(prev => ({...prev, aceita_cartao: checked}))}
+                              />
+                              <Label>Cartão de Crédito/Débito</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Switch
+                                checked={configuracoes.aceita_dinheiro}
+                                onCheckedChange={(checked) => setConfiguracoes(prev => ({...prev, aceita_dinheiro: checked}))}
+                              />
+                              <Label>Dinheiro</Label>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="flex gap-3 pt-4">
-                      <Button onClick={salvarConfiguracoes} className="flex-1 bg-red-600 hover:bg-red-700">
-                        Salvar Configurações
-                      </Button>
-                      <Button variant="outline" onClick={() => setShowConfigDialog(false)}>
-                        Cancelar
-                      </Button>
-                    </div>
-                  </div>
+                      <div className="flex gap-3 pt-4">
+                        <Button onClick={salvarConfiguracaoBasica} className="flex-1 bg-red-600 hover:bg-red-700">
+                          Salvar Configurações Básicas
+                        </Button>
+                        <Button variant="outline" onClick={() => setShowConfigDialog(false)}>
+                          Cancelar
+                        </Button>
+                      </div>
+                    </TabsContent>
+                    
+                    <TabsContent value="avancadas">
+                      <ConfiguracoesAvancadas 
+                        configuracoes={configuracoes}
+                        onSave={salvarConfiguracoes}
+                      />
+                    </TabsContent>
+                  </Tabs>
                 </DialogContent>
               </Dialog>
             </div>
           </div>
         </div>
 
-        {/* Cards de Estatísticas */}
+        {/* Cards de Estatísticas Expandidos */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardHeader className="pb-2">
@@ -480,7 +483,7 @@ const DashboardRestaurante: React.FC = () => {
                 {estatisticas.avaliacoes}/5
               </div>
               <p className="text-xs text-gray-500">
-                Baseado em 156 avaliações
+                {estatisticas.clientes_ativos} clientes ativos
               </p>
             </CardContent>
           </Card>
@@ -501,6 +504,113 @@ const DashboardRestaurante: React.FC = () => {
               <p className="text-xs text-gray-500">
                 Preparo + entrega
               </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Estatísticas Adicionais */}
+        <div className="grid md:grid-cols-4 gap-4 mb-8">
+          <Card>
+            <CardContent className="p-4 text-center">
+              <div className="text-xl font-bold text-green-600">
+                R$ {estatisticas.faturamento_mensal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </div>
+              <p className="text-sm text-gray-600">Faturamento Mensal</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4 text-center">
+              <div className="text-xl font-bold text-blue-600">
+                {estatisticas.produtos_vendidos_hoje}
+              </div>
+              <p className="text-sm text-gray-600">Produtos Vendidos Hoje</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4 text-center">
+              <div className="text-xl font-bold text-purple-600">
+                {estatisticas.clientes_ativos}
+              </div>
+              <p className="text-sm text-gray-600">Clientes Ativos</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4 text-center">
+              <div className="text-xl font-bold text-red-600">
+                {estatisticas.taxa_cancelamento}%
+              </div>
+              <p className="text-sm text-gray-600">Taxa de Cancelamento</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Gráficos e Analytics */}
+        <div className="grid lg:grid-cols-2 gap-6 mb-8">
+          <StatisticsChart
+            data={dadosVendasSemana}
+            title="Vendas da Semana"
+            type="bar"
+            dataKey="vendas"
+            xAxisKey="name"
+          />
+          
+          <StatisticsChart
+            data={dadosProdutosMaisVendidos}
+            title="Produtos Mais Vendidos"
+            type="pie"
+            dataKey="value"
+          />
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-6 mb-8">
+          <StatisticsChart
+            data={dadosHorariosPico}
+            title="Horários de Pico"
+            type="line"
+            dataKey="pedidos"
+            xAxisKey="name"
+          />
+          
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Target className="w-5 h-5 mr-2" />
+                Metas do Mês
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span>Faturamento</span>
+                  <span>R$ 24.680 / R$ 30.000</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-green-600 h-2 rounded-full" style={{ width: '82%' }}></div>
+                </div>
+              </div>
+              
+              <div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span>Pedidos</span>
+                  <span>680 / 800</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-blue-600 h-2 rounded-full" style={{ width: '85%' }}></div>
+                </div>
+              </div>
+              
+              <div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span>Novos Clientes</span>
+                  <span>45 / 60</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-purple-600 h-2 rounded-full" style={{ width: '75%' }}></div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -529,7 +639,7 @@ const DashboardRestaurante: React.FC = () => {
             variant="outline"
             className="h-16"
           >
-            <TrendingUp className="w-5 h-5 mr-2" />
+            <BarChart3 className="w-5 h-5 mr-2" />
             Relatórios
           </Button>
           
@@ -609,31 +719,6 @@ const DashboardRestaurante: React.FC = () => {
             </CardContent>
           </Card>
         )}
-
-        {/* Resumo Rápido */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Resumo do Dia</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                <span>Faturamento do dia</span>
-                <span className="font-bold text-green-600">R$ {estatisticas.vendas_hoje.toFixed(2)}</span>
-              </div>
-              
-              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                <span>Pedidos realizados</span>
-                <span className="font-bold text-blue-600">{estatisticas.pedidos_hoje}</span>
-              </div>
-              
-              <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
-                <span>Pedidos pendentes</span>
-                <span className="font-bold text-orange-600">{estatisticas.pedidos_pendentes}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </main>
     </div>
   );

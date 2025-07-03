@@ -5,14 +5,23 @@ import Header from '@/components/Layout/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Clock, MapPin, Phone, Package, CheckCircle, Truck, X } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Clock, MapPin, Phone, Package, CheckCircle, Truck, X, Search, Filter, Calendar as CalendarIcon, Download, RefreshCw } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { menuAiService } from '@/services/menuAiService';
 
 const PedidosRestaurantePage: React.FC = () => {
   const [user, setUser] = useState<any>(null);
   const [filtroStatus, setFiltroStatus] = useState('todos');
+  const [filtroData, setFiltroData] = useState<Date | undefined>(undefined);
+  const [busca, setBusca] = useState('');
+  const [pedidosSelecionados, setPedidosSelecionados] = useState<string[]>([]);
+  const [showFiltros, setShowFiltros] = useState(false);
+  const [atualizandoPedidos, setAtualizandoPedidos] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -23,13 +32,23 @@ const PedidosRestaurantePage: React.FC = () => {
         navigate('/login');
       } else {
         setUser(parsedUser);
+        carregarPedidos();
       }
     } else {
       navigate('/login');
     }
   }, [navigate]);
 
-  // Dados mockados de pedidos com telefone do cliente
+  const carregarPedidos = () => {
+    const pedidosSalvos = localStorage.getItem('restaurant_orders');
+    if (pedidosSalvos) {
+      setPedidos(JSON.parse(pedidosSalvos));
+      return;
+    }
+    // Manter pedidos mockados se não houver salvos
+  };
+
+  // Dados mockados de pedidos expandidos
   const [pedidos, setPedidos] = useState([
     {
       id: '#001',
@@ -47,7 +66,9 @@ const PedidosRestaurantePage: React.FC = () => {
       horario: '19:30',
       observacoes: 'Sem cebola, por favor',
       pagamento: 'Cartão de Crédito',
-      data: new Date().toLocaleDateString()
+      data: new Date().toLocaleDateString(),
+      tempo_estimado: 35,
+      avaliacao: null
     },
     {
       id: '#002',
@@ -64,7 +85,9 @@ const PedidosRestaurantePage: React.FC = () => {
       horario: '19:45',
       observacoes: '',
       pagamento: 'PIX',
-      data: new Date().toLocaleDateString()
+      data: new Date().toLocaleDateString(),
+      tempo_estimado: 25,
+      avaliacao: null
     },
     {
       id: '#003',
@@ -82,7 +105,28 @@ const PedidosRestaurantePage: React.FC = () => {
       horario: '19:15',
       observacoes: 'Entregar no portão',
       pagamento: 'Dinheiro',
-      data: new Date().toLocaleDateString()
+      data: new Date().toLocaleDateString(),
+      tempo_estimado: 30,
+      avaliacao: 4.5
+    },
+    {
+      id: '#004',
+      cliente: {
+        nome: 'Ana Costa',
+        telefone: '5511666666666',
+        endereco: 'Rua das Palmeiras, 321'
+      },
+      produtos: [
+        { nome: 'Pizza Frango Catupiry', quantidade: 1, preco: 39.90 }
+      ],
+      valor_total: 39.90,
+      status: 'entregue',
+      horario: '18:30',
+      observacoes: '',
+      pagamento: 'PIX',
+      data: new Date().toLocaleDateString(),
+      tempo_estimado: 28,
+      avaliacao: 5.0
     }
   ]);
 
@@ -101,12 +145,10 @@ const PedidosRestaurantePage: React.FC = () => {
   const handleStatusChange = async (pedidoId: string, novoStatus: string) => {
     const pedido = pedidos.find(p => p.id === pedidoId);
     
-    // Atualizar status localmente
     setPedidos(pedidos.map(pedido => 
       pedido.id === pedidoId ? { ...pedido, status: novoStatus } : pedido
     ));
     
-    // Salvar no localStorage para persistência
     const pedidosAtualizados = pedidos.map(p => 
       p.id === pedidoId ? { ...p, status: novoStatus } : p
     );
@@ -119,7 +161,6 @@ const PedidosRestaurantePage: React.FC = () => {
       description: `Pedido ${pedidoId} foi atualizado para ${statusInfo.label}.`,
     });
 
-    // Enviar notificação WhatsApp se configurado
     if (pedido && menuAiService.isConfigured()) {
       try {
         await menuAiService.sendStatusMessage(
@@ -138,7 +179,6 @@ const PedidosRestaurantePage: React.FC = () => {
       }
     }
 
-    // Se o pedido foi marcado como "saiu para entrega", simular notificação para entregador
     if (novoStatus === 'saiu_entrega') {
       toast({
         title: 'Entregador notificado!',
@@ -176,9 +216,116 @@ const PedidosRestaurantePage: React.FC = () => {
     }
   };
 
-  const pedidosFiltrados = filtroStatus === 'todos' 
-    ? pedidos 
-    : pedidos.filter(pedido => pedido.status === filtroStatus);
+  const handleSelecionarPedido = (pedidoId: string, selecionado: boolean) => {
+    if (selecionado) {
+      setPedidosSelecionados([...pedidosSelecionados, pedidoId]);
+    } else {
+      setPedidosSelecionados(pedidosSelecionados.filter(id => id !== pedidoId));
+    }
+  };
+
+  const handleSelecionarTodos = (selecionado: boolean) => {
+    if (selecionado) {
+      setPedidosSelecionados(pedidosFiltrados.map(p => p.id));
+    } else {
+      setPedidosSelecionados([]);
+    }
+  };
+
+  const handleAcaoLote = async (acao: string) => {
+    if (pedidosSelecionados.length === 0) {
+      toast({
+        title: 'Nenhum pedido selecionado',
+        description: 'Selecione pelo menos um pedido para executar a ação.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    const acoes = {
+      'marcar_preparando': 'preparando',
+      'marcar_pronto': 'pronto',
+      'marcar_saiu_entrega': 'saiu_entrega',
+      'cancelar': 'cancelado'
+    };
+
+    const novoStatus = acoes[acao as keyof typeof acoes];
+    if (novoStatus) {
+      pedidosSelecionados.forEach(pedidoId => {
+        handleStatusChange(pedidoId, novoStatus);
+      });
+      setPedidosSelecionados([]);
+      
+      toast({
+        title: 'Ação executada!',
+        description: `${pedidosSelecionados.length} pedido(s) atualizado(s).`,
+      });
+    }
+  };
+
+  const atualizarPedidos = () => {
+    setAtualizandoPedidos(true);
+    // Simular atualização
+    setTimeout(() => {
+      carregarPedidos();
+      setAtualizandoPedidos(false);
+      toast({
+        title: 'Pedidos atualizados!',
+        description: 'Lista de pedidos foi atualizada.',
+      });
+    }, 1000);
+  };
+
+  const exportarRelatorio = () => {
+    const dados = pedidosFiltrados.map(pedido => ({
+      ID: pedido.id,
+      Cliente: pedido.cliente.nome,
+      Telefone: pedido.cliente.telefone,
+      Status: getStatusBadge(pedido.status).label,
+      Valor: `R$ ${pedido.valor_total.toFixed(2)}`,
+      Horario: pedido.horario,
+      Data: pedido.data,
+      Pagamento: pedido.pagamento
+    }));
+
+    const csv = [
+      Object.keys(dados[0]).join(','),
+      ...dados.map(row => Object.values(row).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pedidos_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+
+    toast({
+      title: 'Relatório exportado!',
+      description: 'Arquivo CSV foi baixado com sucesso.',
+    });
+  };
+
+  // Filtros aplicados
+  let pedidosFiltrados = pedidos;
+
+  if (filtroStatus !== 'todos') {
+    pedidosFiltrados = pedidosFiltrados.filter(pedido => pedido.status === filtroStatus);
+  }
+
+  if (filtroData) {
+    const dataFiltro = filtroData.toLocaleDateString();
+    pedidosFiltrados = pedidosFiltrados.filter(pedido => pedido.data === dataFiltro);
+  }
+
+  if (busca) {
+    pedidosFiltrados = pedidosFiltrados.filter(pedido => 
+      pedido.id.toLowerCase().includes(busca.toLowerCase()) ||
+      pedido.cliente.nome.toLowerCase().includes(busca.toLowerCase()) ||
+      pedido.cliente.telefone.includes(busca)
+    );
+  }
 
   const getProximoStatus = (statusAtual: string) => {
     const fluxo = {
@@ -193,7 +340,6 @@ const PedidosRestaurantePage: React.FC = () => {
   const getStatusActions = (pedido: any) => {
     const actions = [];
     
-    // Botão para próximo status
     const proximoStatus = getProximoStatus(pedido.status);
     if (proximoStatus) {
       const statusInfo = getStatusBadge(proximoStatus);
@@ -212,7 +358,6 @@ const PedidosRestaurantePage: React.FC = () => {
       );
     }
     
-    // Botão de cancelar (apenas para pedidos recebidos ou preparando)
     if (['recebido', 'preparando'].includes(pedido.status)) {
       actions.push(
         <Button 
@@ -249,22 +394,99 @@ const PedidosRestaurantePage: React.FC = () => {
               </p>
             </div>
             
-            <Select value={filtroStatus} onValueChange={setFiltroStatus}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filtrar por status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos os pedidos</SelectItem>
-                <SelectItem value="recebido">Recebidos</SelectItem>
-                <SelectItem value="preparando">Preparando</SelectItem>
-                <SelectItem value="pronto">Prontos</SelectItem>
-                <SelectItem value="saiu_entrega">Em entrega</SelectItem>
-                <SelectItem value="entregue">Entregues</SelectItem>
-                <SelectItem value="cancelado">Cancelados</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex items-center space-x-3">
+              <Button
+                variant="outline"
+                onClick={atualizarPedidos}
+                disabled={atualizandoPedidos}
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${atualizandoPedidos ? 'animate-spin' : ''}`} />
+                Atualizar
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={exportarRelatorio}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Exportar
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={() => setShowFiltros(!showFiltros)}
+              >
+                <Filter className="w-4 h-4 mr-2" />
+                Filtros
+              </Button>
+            </div>
           </div>
         </div>
+
+        {/* Filtros Expandidos */}
+        {showFiltros && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Filtros Avançados</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-4 gap-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Input
+                    placeholder="Buscar por ID, cliente ou telefone"
+                    value={busca}
+                    onChange={(e) => setBusca(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                
+                <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos os pedidos</SelectItem>
+                    <SelectItem value="recebido">Recebidos</SelectItem>
+                    <SelectItem value="preparando">Preparando</SelectItem>
+                    <SelectItem value="pronto">Prontos</SelectItem>
+                    <SelectItem value="saiu_entrega">Em entrega</SelectItem>
+                    <SelectItem value="entregue">Entregues</SelectItem>
+                    <SelectItem value="cancelado">Cancelados</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="justify-start">
+                      <CalendarIcon className="w-4 h-4 mr-2" />
+                      {filtroData ? filtroData.toLocaleDateString() : 'Selecionar data'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={filtroData}
+                      onSelect={setFiltroData}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setBusca('');
+                    setFiltroStatus('todos');
+                    setFiltroData(undefined);
+                  }}
+                >
+                  Limpar Filtros
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Estatísticas Rápidas */}
         <div className="grid md:grid-cols-6 gap-4 mb-8">
@@ -318,6 +540,46 @@ const PedidosRestaurantePage: React.FC = () => {
           </Card>
         </div>
 
+        {/* Ações em Lote */}
+        {pedidosSelecionados.length > 0 && (
+          <Card className="mb-6 bg-blue-50 border-blue-200">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <span className="font-medium">
+                  {pedidosSelecionados.length} pedido(s) selecionado(s)
+                </span>
+                <div className="flex space-x-2">
+                  <Button size="sm" onClick={() => handleAcaoLote('marcar_preparando')}>
+                    Marcar como Preparando
+                  </Button>
+                  <Button size="sm" onClick={() => handleAcaoLote('marcar_pronto')}>
+                    Marcar como Pronto
+                  </Button>
+                  <Button size="sm" onClick={() => handleAcaoLote('marcar_saiu_entrega')}>
+                    Marcar Saiu p/ Entrega
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={() => handleAcaoLote('cancelar')}>
+                    Cancelar Selecionados
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Controle de Seleção */}
+        {pedidosFiltrados.length > 0 && (
+          <div className="flex items-center space-x-4 mb-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                checked={pedidosSelecionados.length === pedidosFiltrados.length}
+                onCheckedChange={handleSelecionarTodos}
+              />
+              <Label>Selecionar todos ({pedidosFiltrados.length})</Label>
+            </div>
+          </div>
+        )}
+
         {/* Lista de Pedidos */}
         <div className="space-y-6">
           {pedidosFiltrados.map(pedido => {
@@ -328,14 +590,23 @@ const PedidosRestaurantePage: React.FC = () => {
               <Card key={pedido.id} className="overflow-hidden">
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-lg">{pedido.id}</CardTitle>
-                      <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
-                        <span className="flex items-center">
-                          <Clock className="w-4 h-4 mr-1" />
-                          {pedido.horario} - {pedido.data}
-                        </span>
-                        <span>{pedido.pagamento}</span>
+                    <div className="flex items-center space-x-3">
+                      <Checkbox
+                        checked={pedidosSelecionados.includes(pedido.id)}
+                        onCheckedChange={(checked) => handleSelecionarPedido(pedido.id, checked as boolean)}
+                      />
+                      <div>
+                        <CardTitle className="text-lg">{pedido.id}</CardTitle>
+                        <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
+                          <span className="flex items-center">
+                            <Clock className="w-4 h-4 mr-1" />
+                            {pedido.horario} - {pedido.data}
+                          </span>
+                          <span>{pedido.pagamento}</span>
+                          {pedido.tempo_estimado && (
+                            <span>⏱️ {pedido.tempo_estimado}min</span>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-3">
@@ -346,13 +617,18 @@ const PedidosRestaurantePage: React.FC = () => {
                       <span className="font-bold text-lg text-green-600">
                         R$ {pedido.valor_total.toFixed(2)}
                       </span>
+                      {pedido.avaliacao && (
+                        <div className="flex items-center">
+                          <span className="text-yellow-500">⭐</span>
+                          <span className="text-sm ml-1">{pedido.avaliacao}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardHeader>
                 
                 <CardContent>
                   <div className="grid md:grid-cols-2 gap-6">
-                    {/* Informações do Cliente */}
                     <div>
                       <h4 className="font-medium mb-3">Cliente</h4>
                       <div className="space-y-2 text-sm">
@@ -373,7 +649,6 @@ const PedidosRestaurantePage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Produtos */}
                     <div>
                       <h4 className="font-medium mb-3">Produtos</h4>
                       <div className="space-y-2">
@@ -398,7 +673,6 @@ const PedidosRestaurantePage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Ações */}
                   <div className="flex flex-wrap gap-3 mt-6 pt-4 border-t">
                     {getStatusActions(pedido)}
                     
@@ -426,7 +700,7 @@ const PedidosRestaurantePage: React.FC = () => {
             <p className="text-gray-500">
               {filtroStatus === 'todos' 
                 ? 'Não há pedidos no momento.' 
-                : `Não há pedidos com status "${getStatusBadge(filtroStatus).label}".`
+                : `Não há pedidos com os filtros aplicados.`
               }
             </p>
           </div>
