@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Layout/Header';
@@ -402,8 +401,7 @@ const CarrinhoPage: React.FC = () => {
       <GerenciadorEnderecos
         isOpen={showGerenciadorEnderecos}
         onClose={() => setShowGerenciadorEnderecos(false)}
-        onEnderecoSelecionado={handleEnderecoSelecionado}
-        enderecoAtual={enderecoSelecionado ? formatarEnderecoCompleto(enderecoSelecionado) : ''}
+        onSelectEndereco={handleEnderecoSelecionado}
       />
 
       <PagamentoPix
