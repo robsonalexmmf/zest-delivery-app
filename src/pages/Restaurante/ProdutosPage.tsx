@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Edit, Trash2, Package, Settings } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, Settings, Upload, ImageIcon } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 const ProdutosPage: React.FC = () => {
@@ -20,6 +20,7 @@ const ProdutosPage: React.FC = () => {
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [showAdicionaisDialog, setShowAdicionaisDialog] = useState(false);
   const [produtoAdicionais, setProdutoAdicionais] = useState<any>(null);
+  const [imagemPreview, setImagemPreview] = useState<string>('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -101,6 +102,25 @@ const ProdutosPage: React.FC = () => {
     opcoes: [{ nome: '', preco: '' }]
   });
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Simular upload de imagem
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const imageUrl = event.target?.result as string;
+        setFormData({ ...formData, imagem: imageUrl });
+        setImagemPreview(imageUrl);
+        
+        toast({
+          title: 'Imagem carregada!',
+          description: 'A imagem foi carregada com sucesso.',
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -138,6 +158,7 @@ const ProdutosPage: React.FC = () => {
       disponivel: true,
       imagem: ''
     });
+    setImagemPreview('');
     setEditingProduct(null);
     setIsDialogOpen(false);
   };
@@ -152,6 +173,7 @@ const ProdutosPage: React.FC = () => {
       disponivel: produto.disponivel,
       imagem: produto.imagem
     });
+    setImagemPreview(produto.imagem);
     setIsDialogOpen(true);
   };
 
@@ -314,13 +336,53 @@ const ProdutosPage: React.FC = () => {
                   </div>
                   
                   <div>
-                    <Label htmlFor="imagem">URL da Imagem</Label>
-                    <Input
-                      id="imagem"
-                      value={formData.imagem}
-                      onChange={(e) => setFormData({...formData, imagem: e.target.value})}
-                      placeholder="/placeholder.svg"
-                    />
+                    <Label htmlFor="imagem">Imagem do Produto</Label>
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-3">
+                        <Input
+                          id="imagem"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => document.getElementById('imagem')?.click()}
+                          className="flex-1"
+                        >
+                          <Upload className="w-4 h-4 mr-2" />
+                          Fazer Upload da Imagem
+                        </Button>
+                      </div>
+                      {imagemPreview && (
+                        <div className="flex items-center space-x-3">
+                          <img 
+                            src={imagemPreview} 
+                            alt="Preview" 
+                            className="w-16 h-16 object-cover rounded-lg border"
+                          />
+                          <div className="flex-1">
+                            <p className="text-sm text-green-600 font-medium">
+                              Imagem carregada com sucesso!
+                            </p>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setImagemPreview('');
+                                setFormData({...formData, imagem: ''});
+                              }}
+                              className="mt-1 text-red-600"
+                            >
+                              Remover
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   
                   <div className="flex items-center space-x-2">
@@ -342,6 +404,7 @@ const ProdutosPage: React.FC = () => {
                       onClick={() => {
                         setIsDialogOpen(false);
                         setEditingProduct(null);
+                        setImagemPreview('');
                         setFormData({
                           nome: '', descricao: '', preco: '', categoria: '', disponivel: true, imagem: ''
                         });

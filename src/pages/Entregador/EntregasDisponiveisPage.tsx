@@ -122,26 +122,44 @@ const EntregasDisponiveisPage: React.FC = () => {
   };
 
   const handleAceitarEntrega = (entregaId: string) => {
+    // Salvar entrega aceita no localStorage
+    const entregaAceita = entregasDisponiveis.find(e => e.id === entregaId);
+    if (entregaAceita) {
+      const entregasAndamento = JSON.parse(localStorage.getItem('entregas_andamento') || '[]');
+      entregasAndamento.push({
+        ...entregaAceita,
+        status: 'aceita',
+        horario_aceite: new Date().toLocaleTimeString(),
+        data_aceite: new Date().toLocaleDateString()
+      });
+      localStorage.setItem('entregas_andamento', JSON.stringify(entregasAndamento));
+    }
+    
+    // Remover da lista de disponíveis
     setEntregasDisponiveis(entregas => entregas.filter(e => e.id !== entregaId));
     
     toast({
       title: 'Entrega aceita!',
       description: `Você aceitou a entrega ${entregaId}. Dirija-se ao restaurante.`,
     });
+
+    // Redirecionar para dashboard do entregador
+    setTimeout(() => {
+      navigate('/dashboard-entregador');
+    }, 2000);
   };
 
   const handleVerMapa = (entrega: any) => {
-    toast({
-      title: 'Abrindo Google Maps',
-      description: `Rota: ${entrega.restaurante.endereco} → ${entrega.cliente.endereco}`,
-    });
-    
-    // Criar URL do Google Maps com múltiplos pontos (restaurante -> cliente)
     const origem = encodeURIComponent(entrega.restaurante.endereco);
     const destino = encodeURIComponent(entrega.cliente.endereco);
-    const url = `https://maps.google.com/maps/dir/${origem}/${destino}`;
+    const url = `https://www.google.com/maps/dir/${origem}/${destino}`;
     
     window.open(url, '_blank');
+    
+    toast({
+      title: 'Abrindo Google Maps',
+      description: `Rota: ${entrega.restaurante.nome} → ${entrega.cliente.nome}`,
+    });
   };
 
   if (!user) return null;

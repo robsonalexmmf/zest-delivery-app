@@ -126,6 +126,21 @@ const PedidosRestaurantePage: React.FC = () => {
     }
   };
 
+  const handleEntrarContato = (pedido: any) => {
+    const telefone = pedido.cliente.telefone.replace(/\D/g, '');
+    const mensagem = encodeURIComponent(
+      `Olá ${pedido.cliente.nome}! Sou do restaurante ${user?.nome || 'ZDelivery'} sobre o seu pedido ${pedido.id}.`
+    );
+    const url = `https://wa.me/${telefone}?text=${mensagem}`;
+    
+    window.open(url, '_blank');
+    
+    toast({
+      title: 'Abrindo WhatsApp',
+      description: `Entrando em contato com ${pedido.cliente.nome}`,
+    });
+  };
+
   const pedidosFiltrados = filtroStatus === 'todos' 
     ? pedidos 
     : pedidos.filter(pedido => pedido.status === filtroStatus);
@@ -300,7 +315,12 @@ const PedidosRestaurantePage: React.FC = () => {
                     </Button>
                   )}
                   
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleEntrarContato(pedido)}
+                  >
+                    <Phone className="w-4 h-4 mr-2" />
                     Entrar em Contato
                   </Button>
                 </div>

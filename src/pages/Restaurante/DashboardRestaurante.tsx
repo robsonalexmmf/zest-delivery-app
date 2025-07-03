@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Layout/Header';
@@ -8,6 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { 
   DollarSign, 
   ShoppingCart, 
@@ -17,12 +21,58 @@ import {
   Settings,
   CreditCard,
   Star,
-  Tag
+  Tag,
+  Upload,
+  MapPin,
+  Phone,
+  Mail,
+  Globe
 } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 const DashboardRestaurante: React.FC = () => {
   const [user, setUser] = useState<any>(null);
+  const [configuracoes, setConfiguracoes] = useState({
+    nomeRestaurante: '',
+    descricao: '',
+    categoria: '',
+    cidade: '',
+    endereco: '',
+    telefone: '',
+    email: '',
+    site: '',
+    horarioFuncionamento: {
+      segunda: { abertura: '08:00', fechamento: '22:00', ativo: true },
+      terca: { abertura: '08:00', fechamento: '22:00', ativo: true },
+      quarta: { abertura: '08:00', fechamento: '22:00', ativo: true },
+      quinta: { abertura: '08:00', fechamento: '22:00', ativo: true },
+      sexta: { abertura: '08:00', fechamento: '23:00', ativo: true },
+      sabado: { abertura: '10:00', fechamento: '23:00', ativo: true },
+      domingo: { abertura: '10:00', fechamento: '22:00', ativo: false }
+    },
+    tempoPreparoMedio: 30,
+    valorMinimoEntrega: 20,
+    taxaEntrega: 5,
+    raioEntrega: 10,
+    aceitaPedidosOnline: true,
+    logo: '',
+    bannerPrincipal: ''
+  });
+  const [logoPreview, setLogoPreview] = useState<string>('');
+  const [bannerPreview, setBannerPreview] = useState<string>('');
   const navigate = useNavigate();
+
+  const categorias = [
+    'Pizza', 'Hambúrguer', 'Japonês', 'Chinês', 'Italiana', 'Brasileira',
+    'Mexicana', 'Árabe', 'Vegetariana', 'Doces', 'Açaí', 'Lanches',
+    'Saudável', 'Fast Food', 'Regional', 'Frutos do Mar'
+  ];
+
+  const cidades = [
+    'São Paulo', 'Rio de Janeiro', 'Belo Horizonte', 'Salvador', 'Fortaleza',
+    'Brasília', 'Curitiba', 'Recife', 'Porto Alegre', 'Manaus',
+    'Belém', 'Goiânia', 'Campinas', 'São Luís', 'São Gonçalo'
+  ];
 
   useEffect(() => {
     const userData = localStorage.getItem('zdelivery_user');
@@ -32,11 +82,79 @@ const DashboardRestaurante: React.FC = () => {
         navigate('/login');
       } else {
         setUser(parsedUser);
+        carregarConfiguracoes();
       }
     } else {
       navigate('/login');
     }
   }, [navigate]);
+
+  const carregarConfiguracoes = () => {
+    const configSalvas = localStorage.getItem('config_restaurante');
+    if (configSalvas) {
+      const config = JSON.parse(configSalvas);
+      setConfiguracoes(config);
+      setLogoPreview(config.logo);
+      setBannerPreview(config.bannerPrincipal);
+    }
+  };
+
+  const salvarConfiguracoes = () => {
+    localStorage.setItem('config_restaurante', JSON.stringify(configuracoes));
+    toast({
+      title: 'Configurações salvas!',
+      description: 'As configurações do restaurante foram atualizadas com sucesso.',
+    });
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const imageUrl = event.target?.result as string;
+        setConfiguracoes({ ...configuracoes, logo: imageUrl });
+        setLogoPreview(imageUrl);
+        
+        toast({
+          title: 'Logo carregada!',
+          description: 'A logo foi carregada com sucesso.',
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const imageUrl = event.target?.result as string;
+        setConfiguracoes({ ...configuracoes, bannerPrincipal: imageUrl });
+        setBannerPreview(imageUrl);
+        
+        toast({
+          title: 'Banner carregado!',
+          description: 'O banner foi carregado com sucesso.',
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleHorarioChange = (dia: string, campo: string, valor: string | boolean) => {
+    setConfiguracoes({
+      ...configuracoes,
+      horarioFuncionamento: {
+        ...configuracoes.horarioFuncionamento,
+        [dia]: {
+          ...configuracoes.horarioFuncionamento[dia as keyof typeof configuracoes.horarioFuncionamento],
+          [campo]: valor
+        }
+      }
+    });
+  };
 
   // Dados mockados para demonstração
   const estatisticas = {
@@ -342,16 +460,307 @@ const DashboardRestaurante: React.FC = () => {
 
           <TabsContent value="configuracoes">
             <div className="grid gap-6">
+              {/* Informações Básicas */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Configurações Gerais</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600">
-                    Outras configurações do restaurante serão adicionadas aqui.
+                  <CardTitle>Informações do Restaurante</CardTitle>
+                  <p className="text-sm text-gray-600">
+                    Configure as informações básicas do seu restaurante
                   </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="nomeRestaurante">Nome do Restaurante</Label>
+                      <Input
+                        id="nomeRestaurante"
+                        value={configuracoes.nomeRestaurante}
+                        onChange={(e) => setConfiguracoes({...configuracoes, nomeRestaurante: e.target.value})}
+                        placeholder="Nome do seu restaurante"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="categoria">Categoria</Label>
+                      <Select 
+                        value={configuracoes.categoria} 
+                        onValueChange={(value) => setConfiguracoes({...configuracoes, categoria: value})}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione uma categoria" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categorias.map(cat => (
+                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="descricao">Descrição</Label>
+                    <Textarea
+                      id="descricao"
+                      value={configuracoes.descricao}
+                      onChange={(e) => setConfiguracoes({...configuracoes, descricao: e.target.value})}
+                      placeholder="Descreva seu restaurante"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="cidade">Cidade</Label>
+                      <Select 
+                        value={configuracoes.cidade} 
+                        onValueChange={(value) => setConfiguracoes({...configuracoes, cidade: value})}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione uma cidade" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {cidades.map(cidade => (
+                            <SelectItem key={cidade} value={cidade}>{cidade}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="endereco">Endereço</Label>
+                      <Input
+                        id="endereco"
+                        value={configuracoes.endereco}
+                        onChange={(e) => setConfiguracoes({...configuracoes, endereco: e.target.value})}
+                        placeholder="Endereço completo"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="telefone">Telefone</Label>
+                      <Input
+                        id="telefone"
+                        value={configuracoes.telefone}
+                        onChange={(e) => setConfiguracoes({...configuracoes, telefone: e.target.value})}
+                        placeholder="(11) 99999-9999"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="email">E-mail</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={configuracoes.email}
+                        onChange={(e) => setConfiguracoes({...configuracoes, email: e.target.value})}
+                        placeholder="contato@restaurante.com"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="site">Site</Label>
+                      <Input
+                        id="site"
+                        value={configuracoes.site}
+                        onChange={(e) => setConfiguracoes({...configuracoes, site: e.target.value})}
+                        placeholder="www.restaurante.com"
+                      />
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
+
+              {/* Imagens */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Imagens do Restaurante</CardTitle>
+                  <p className="text-sm text-gray-600">
+                    Faça upload da logo e banner do seu restaurante
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div>
+                    <Label>Logo do Restaurante</Label>
+                    <div className="flex items-center space-x-4 mt-2">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                        className="hidden"
+                        id="logo-upload"
+                      />
+                      <Button
+                        variant="outline"
+                        onClick={() => document.getElementById('logo-upload')?.click()}
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        Upload Logo
+                      </Button>
+                      {logoPreview && (
+                        <div className="flex items-center space-x-2">
+                          <img 
+                            src={logoPreview} 
+                            alt="Logo preview" 
+                            className="w-12 h-12 object-cover rounded-lg border"
+                          />
+                          <span className="text-sm text-green-600">Logo carregada</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label>Banner Principal</Label>
+                    <div className="flex items-center space-x-4 mt-2">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleBannerUpload}
+                        className="hidden"
+                        id="banner-upload"
+                      />
+                      <Button
+                        variant="outline"
+                        onClick={() => document.getElementById('banner-upload')?.click()}
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        Upload Banner
+                      </Button>
+                      {bannerPreview && (
+                        <div className="flex items-center space-x-2">
+                          <img 
+                            src={bannerPreview} 
+                            alt="Banner preview" 
+                            className="w-20 h-12 object-cover rounded-lg border"
+                          />
+                          <span className="text-sm text-green-600">Banner carregado</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Horário de Funcionamento */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Horário de Funcionamento</CardTitle>
+                  <p className="text-sm text-gray-600">
+                    Configure os horários de funcionamento do seu restaurante
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {Object.entries(configuracoes.horarioFuncionamento).map(([dia, horario]) => (
+                      <div key={dia} className="flex items-center space-x-4">
+                        <div className="w-20">
+                          <span className="capitalize font-medium">{dia}</span>
+                        </div>
+                        <Switch
+                          checked={horario.ativo}
+                          onCheckedChange={(checked) => handleHorarioChange(dia, 'ativo', checked)}
+                        />
+                        {horario.ativo && (
+                          <>
+                            <Input
+                              type="time"
+                              value={horario.abertura}
+                              onChange={(e) => handleHorarioChange(dia, 'abertura', e.target.value)}
+                              className="w-32"
+                            />
+                            <span>às</span>
+                            <Input
+                              type="time"
+                              value={horario.fechamento}
+                              onChange={(e) => handleHorarioChange(dia, 'fechamento', e.target.value)}
+                              className="w-32"
+                            />
+                          </>
+                        )}
+                        {!horario.ativo && (
+                          <span className="text-gray-500">Fechado</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Configurações de Entrega */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Configurações de Entrega</CardTitle>
+                  <p className="text-sm text-gray-600">
+                    Configure as opções de entrega do seu restaurante
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="tempoPreparoMedio">Tempo de Preparo Médio (min)</Label>
+                      <Input
+                        id="tempoPreparoMedio"
+                        type="number"
+                        value={configuracoes.tempoPreparoMedio}
+                        onChange={(e) => setConfiguracoes({...configuracoes, tempoPreparoMedio: parseInt(e.target.value)})}
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="valorMinimoEntrega">Valor Mínimo para Entrega (R$)</Label>
+                      <Input
+                        id="valorMinimoEntrega"
+                        type="number"
+                        step="0.01"
+                        value={configuracoes.valorMinimoEntrega}
+                        onChange={(e) => setConfiguracoes({...configuracoes, valorMinimoEntrega: parseFloat(e.target.value)})}
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="taxaEntrega">Taxa de Entrega (R$)</Label>
+                      <Input
+                        id="taxaEntrega"
+                        type="number"
+                        step="0.01"
+                        value={configuracoes.taxaEntrega}
+                        onChange={(e) => setConfiguracoes({...configuracoes, taxaEntrega: parseFloat(e.target.value)})}
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="raioEntrega">Raio de Entrega (km)</Label>
+                      <Input
+                        id="raioEntrega"
+                        type="number"
+                        value={configuracoes.raioEntrega}
+                        onChange={(e) => setConfiguracoes({...configuracoes, raioEntrega: parseInt(e.target.value)})}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex items-center space-x-2">
+                    <Switch
+                      checked={configuracoes.aceitaPedidosOnline}
+                      onCheckedChange={(checked) => setConfiguracoes({...configuracoes, aceitaPedidosOnline: checked})}
+                    />
+                    <Label>Aceitar pedidos online</Label>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Botão Salvar */}
+              <div className="flex justify-end">
+                <Button 
+                  onClick={salvarConfiguracoes}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  Salvar Configurações
+                </Button>
+              </div>
             </div>
           </TabsContent>
         </Tabs>
