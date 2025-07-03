@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Smartphone, User, MapPin, DollarSign } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import ImageUpload from '@/components/common/ImageUpload';
 
 const ConfiguracaoEntregadorPage: React.FC = () => {
   const [user, setUser] = useState<any>(null);
@@ -25,7 +26,8 @@ const ConfiguracaoEntregadorPage: React.FC = () => {
       nome: '',
       cpf: '',
       telefone: '',
-      veiculo: 'moto' as 'moto' | 'bicicleta' | 'carro' | 'pe'
+      veiculo: 'moto' as 'moto',
+      fotoPerfil: ''
     },
     disponibilidade: {
       ativo: true,
@@ -151,6 +153,19 @@ const ConfiguracaoEntregadorPage: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                <ImageUpload
+                  label="Foto de Perfil"
+                  value={configuracoes.dadosPessoais.fotoPerfil}
+                  onChange={(imageUrl) =>
+                    setConfiguracoes(prev => ({
+                      ...prev,
+                      dadosPessoais: { ...prev.dadosPessoais, fotoPerfil: imageUrl }
+                    }))
+                  }
+                  accept="image/*"
+                  maxSizeMB={2}
+                />
+
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="nome">Nome Completo</Label>
@@ -216,9 +231,6 @@ const ConfiguracaoEntregadorPage: React.FC = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="moto">Moto</SelectItem>
-                        <SelectItem value="bicicleta">Bicicleta</SelectItem>
-                        <SelectItem value="carro">Carro</SelectItem>
-                        <SelectItem value="pe">A pé</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
