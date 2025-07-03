@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, ShoppingCart, LogOut, Edit, Eye } from 'lucide-react';
@@ -5,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 
 interface HeaderProps {
-  userType?: 'cliente' | 'restaurante' | 'entregador';
+  userType?: 'cliente' | 'restaurante' | 'entregador' | 'admin';
   userName?: string;
   cartCount?: number;
 }
@@ -28,6 +29,8 @@ const Header: React.FC<HeaderProps> = ({ userType, userName, cartCount = 0 }) =>
     } else if (userType === 'cliente') {
       // Navegar para configurações do cliente (quando implementado)
       console.log('Editar perfil do cliente');
+    } else if (userType === 'admin') {
+      console.log('Editar perfil do administrador');
     }
   };
 
@@ -38,6 +41,8 @@ const Header: React.FC<HeaderProps> = ({ userType, userName, cartCount = 0 }) =>
       console.log('Ver perfil do entregador');
     } else if (userType === 'cliente') {
       console.log('Ver perfil do cliente');
+    } else if (userType === 'admin') {
+      console.log('Ver perfil do administrador');
     }
   };
 
@@ -93,6 +98,20 @@ const Header: React.FC<HeaderProps> = ({ userType, userName, cartCount = 0 }) =>
                 </Link>
                 <Link to="/entregas-disponiveis" className="hover:text-red-200 transition-colors">
                   Entregas Disponíveis
+                </Link>
+              </>
+            )}
+
+            {userType === 'admin' && (
+              <>
+                <Link to="/dashboard-admin" className="hover:text-red-200 transition-colors">
+                  Dashboard
+                </Link>
+                <Link to="/dashboard-admin" className="hover:text-red-200 transition-colors">
+                  Gerenciar Usuários
+                </Link>
+                <Link to="/dashboard-admin" className="hover:text-red-200 transition-colors">
+                  Relatórios
                 </Link>
               </>
             )}

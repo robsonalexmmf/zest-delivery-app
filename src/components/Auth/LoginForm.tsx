@@ -11,7 +11,7 @@ import { toast } from '@/hooks/use-toast';
 const LoginForm: React.FC = () => {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
-  const [tipoUsuario, setTipoUsuario] = useState<'cliente' | 'restaurante' | 'entregador'>('cliente');
+  const [tipoUsuario, setTipoUsuario] = useState<'cliente' | 'restaurante' | 'entregador' | 'admin'>('cliente');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -19,7 +19,8 @@ const LoginForm: React.FC = () => {
   const usuariosMock = {
     cliente: { email: 'cliente@test.com', senha: '123456', nome: 'João Silva' },
     restaurante: { email: 'restaurante@test.com', senha: '123456', nome: 'Pizza Deliciosa' },
-    entregador: { email: 'entregador@test.com', senha: '123456', nome: 'Carlos Entregador' }
+    entregador: { email: 'entregador@test.com', senha: '123456', nome: 'Carlos Entregador' },
+    admin: { email: 'admin@test.com', senha: '123456', nome: 'Administrador' }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -57,6 +58,9 @@ const LoginForm: React.FC = () => {
           case 'entregador':
             navigate('/dashboard-entregador');
             break;
+          case 'admin':
+            navigate('/dashboard-admin');
+            break;
         }
       } else {
         toast({
@@ -89,6 +93,7 @@ const LoginForm: React.FC = () => {
                   <SelectItem value="cliente">Cliente</SelectItem>
                   <SelectItem value="restaurante">Restaurante</SelectItem>
                   <SelectItem value="entregador">Entregador</SelectItem>
+                  <SelectItem value="admin">Administrador</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -128,6 +133,7 @@ const LoginForm: React.FC = () => {
               <p><strong>Cliente:</strong> cliente@test.com / 123456</p>
               <p><strong>Restaurante:</strong> restaurante@test.com / 123456</p>
               <p><strong>Entregador:</strong> entregador@test.com / 123456</p>
+              <p><strong>Admin:</strong> admin@test.com / 123456</p>
             </div>
           </div>
         </CardContent>
