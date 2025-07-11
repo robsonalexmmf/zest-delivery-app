@@ -1,9 +1,9 @@
-
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, ShoppingCart, LogOut, Edit, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
+import Logo from '@/components/common/Logo';
 
 interface HeaderProps {
   userType?: 'cliente' | 'restaurante' | 'entregador' | 'admin';
@@ -50,8 +50,8 @@ const Header: React.FC<HeaderProps> = ({ userType, userName, cartCount = 0 }) =>
     <header className="bg-red-600 text-white shadow-lg">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
-          <Link to="/" className="text-2xl font-bold">
-            Z Delivery
+          <Link to="/" className="flex items-center space-x-2">
+            <Logo size="lg" className="filter brightness-0 invert" />
           </Link>
 
           <nav className="hidden md:flex space-x-6">
