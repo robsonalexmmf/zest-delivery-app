@@ -1,104 +1,143 @@
 
-import { Link, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, User, LogOut } from 'lucide-react';
-import Logo from '../common/Logo';
+import { Badge } from '@/components/ui/badge';
+import { ShoppingCart, User, LogOut, Settings, Package, Truck } from 'lucide-react';
+import Logo from '@/components/common/Logo';
 import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
 
-const Header = () => {
-  const { user, profile, signOut } = useAuth();
+interface HeaderProps {
+  userType?: 'cliente' | 'restaurante' | 'entregador' | 'admin';
+  userName?: string;
+  cartCount?: number;
+}
+
+const Header: React.FC<HeaderProps> = ({ userType, userName, cartCount = 0 }) => {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { signOut, user, profile } = useAuth();
 
-  const handleSignOut = async () => {
+  // Use auth data if available, fallback to props for backward compatibility
+  const currentUserType = profile?.tipo || userType || 'cliente';
+  const currentUserName = profile?.nome || userName || 'Usuário';
+
+  const handleLogout = async () => {
     try {
       await signOut();
-      toast({
-        title: "Logout realizado com sucesso!",
-        description: "Até logo!",
-      });
       navigate('/');
     } catch (error) {
-      toast({
-        title: "Erro ao fazer logout",
-        description: "Tente novamente.",
-        variant: "destructive",
-      });
+      console.error('Erro ao fazer logout:', error);
     }
   };
 
-  const getDashboardLink = () => {
-    if (!profile) return '/';
-    
-    switch (profile.tipo) {
+  const getNavigationItems = () => {
+    switch (currentUserType) {
+      case 'cliente':
+        return [
+          { label: 'Restaurantes', path: '/restaurantes', icon: Package },
+          { label: 'Meus Pedidos', path: '/meus-pedidos', icon: Package },
+        ];
       case 'restaurante':
-        return '/dashboard-restaurante';
+        return [
+          { label: 'Dashboard', path: '/dashboard-restaurante', icon: Package },
+          { label: 'Produtos', path: '/produtos', icon: Package },
+          { label: 'Pedidos', path: '/pedidos-restaurante', icon: Package },
+          { label: 'Relatórios', path: '/relatorios', icon: Package },
+        ];
       case 'entregador':
-        return '/dashboard-entregador';
+        return [
+          { label: 'Dashboard', path: '/dashboard-entregador', icon: Truck },
+          { label: 'Entregas', path: '/entregas-disponiveis', icon: Truck },
+          { label: 'Configurações', path: '/configuracao-entregador', icon: Settings },
+        ];
       case 'admin':
-        return '/dashboard-admin';
+        return [
+          { label: 'Dashboard', path: '/admin/dashboard', icon: Settings },
+        ];
       default:
-        return '/restaurantes';
+        return [];
     }
   };
+
+  const navigationItems = getNavigationItems();
 
   return (
-    <header className="bg-white shadow-sm border-b sticky top-0 z-50">
-      <div className="container mx-auto px-4 py-3">
-        <div className="flex items-center justify-between">
-          <Link to="/" className="flex items-center space-x-2">
+    <header className="bg-white shadow-sm border-b">
+      <div className="container mx-auto px-4">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
             <Logo />
-          </Link>
+          </div>
 
-          <nav className="hidden md:flex items-center space-x-6">
-            <Link to="/restaurantes" className="text-gray-700 hover:text-orange-600 transition-colors">
-              Restaurantes
-            </Link>
-            {user && (
-              <Link to="/meus-pedidos" className="text-gray-700 hover:text-orange-600 transition-colors">
-                Meus Pedidos
-              </Link>
-            )}
-          </nav>
+          {/* Navigation */}
+          {user && (
+            <nav className="hidden md:flex items-center space-x-6">
+              {navigationItems.map((item) => (
+                <Button
+                  key={item.path}
+                  variant="ghost"
+                  onClick={() => navigate(item.path)}
+                  className="flex items-center space-x-2"
+                >
+                  <item.icon className="w-4 h-4" />
+                  <span>{item.label}</span>
+                </Button>
+              ))}
+            </nav>
+          )}
 
+          {/* User Actions */}
           <div className="flex items-center space-x-4">
             {user ? (
               <>
-                <Link to="/carrinho" className="text-gray-700 hover:text-orange-600 transition-colors">
-                  <ShoppingCart className="h-6 w-6" />
-                </Link>
-                
-                <Link to={getDashboardLink()} className="text-gray-700 hover:text-orange-600 transition-colors">
-                  <User className="h-6 w-6" />
-                </Link>
-
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-600">
-                    Olá, {profile?.nome || user.email}
-                  </span>
+                {/* Cart for clients */}
+                {currentUserType === 'cliente' && (
                   <Button
-                    onClick={handleSignOut}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate('/carrinho')}
+                    className="relative"
+                  >
+                    <ShoppingCart className="w-4 h-4" />
+                    {cartCount > 0 && (
+                      <Badge className="absolute -top-2 -right-2 bg-red-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                        {cartCount}
+                      </Badge>
+                    )}
+                  </Button>
+                )}
+
+                {/* User Menu */}
+                <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2">
+                    <User className="w-4 h-4 text-gray-600" />
+                    <span className="text-sm font-medium text-gray-700">
+                      {currentUserName}
+                    </span>
+                    <Badge variant="secondary" className="text-xs">
+                      {currentUserType.charAt(0).toUpperCase() + currentUserType.slice(1)}
+                    </Badge>
+                  </div>
+                  
+                  <Button
                     variant="ghost"
                     size="sm"
-                    className="text-gray-700 hover:text-orange-600"
+                    onClick={handleLogout}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
                   >
-                    <LogOut className="h-4 w-4" />
+                    <LogOut className="w-4 h-4" />
                   </Button>
                 </div>
               </>
             ) : (
               <div className="flex items-center space-x-2">
-                <Link to="/login">
-                  <Button variant="ghost" className="text-orange-600 hover:text-orange-700">
-                    Login
-                  </Button>
-                </Link>
-                <Link to="/cadastro">
-                  <Button className="bg-orange-600 hover:bg-orange-700 text-white">
-                    Cadastrar
-                  </Button>
-                </Link>
+                <Button variant="ghost" onClick={() => navigate('/login')}>
+                  Entrar
+                </Button>
+                <Button onClick={() => navigate('/cadastro')} className="bg-red-600 hover:bg-red-700">
+                  Cadastrar
+                </Button>
               </div>
             )}
           </div>
