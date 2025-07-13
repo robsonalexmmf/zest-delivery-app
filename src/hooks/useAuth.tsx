@@ -102,15 +102,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Simular autenticação para usuários de teste
     if (password === '123456') {
-      // Criar um user object simulado
-      const mockUser = {
+      // Criar um user object simulado com todas as propriedades necessárias
+      const mockUser: User = {
         id: profile.id,
+        aud: 'authenticated',
+        role: 'authenticated',
         email: profile.email,
+        email_confirmed_at: new Date().toISOString(),
+        phone: profile.telefone || '',
+        confirmed_at: new Date().toISOString(),
+        last_sign_in_at: new Date().toISOString(),
+        app_metadata: {},
         user_metadata: {
           nome: profile.nome,
           tipo: profile.tipo
-        }
-      } as User;
+        },
+        identities: [],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
 
       setUser(mockUser);
       setProfile(profile);
