@@ -1,184 +1,351 @@
 
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
 
-export default function LoginForm() {
-  const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [nome, setNome] = useState('');
-  const [telefone, setTelefone] = useState('');
-  const [endereco, setEndereco] = useState('');
-  const [tipo, setTipo] = useState<'cliente' | 'restaurante' | 'entregador'>('cliente');
+const LoginForm: React.FC = () => {
+  const [loginData, setLoginData] = useState({
+    email: '',
+    password: ''
+  });
+
+  const [signupData, setSignupData] = useState({
+    nome: '',
+    email: '',
+    password: '',
+    telefone: '',
+    endereco: '',
+    tipo: 'cliente' as 'cliente' | 'restaurante' | 'entregador'
+  });
+
   const [loading, setLoading] = useState(false);
-
   const { signIn, signUp } = useAuth();
-  const { toast } = useToast();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    if (!loginData.email || !loginData.password) {
+      toast({
+        title: 'Erro',
+        description: 'Por favor, preencha todos os campos.',
+        variant: 'destructive'
+      });
+      return;
+    }
 
+    setLoading(true);
     try {
-      if (isLogin) {
-        await signIn(email, password);
-        toast({
-          title: "Login realizado com sucesso!",
-          description: "Bem-vindo de volta ao Z Delivery",
-        });
-        navigate('/');
-      } else {
-        await signUp(email, password, { nome, telefone, endereco, tipo });
-        toast({
-          title: "Conta criada com sucesso!",
-          description: "Verifique seu email para confirmar a conta",
-        });
-      }
+      await signIn(loginData.email, loginData.password);
+      
+      toast({
+        title: 'Login realizado com sucesso!',
+        description: 'Redirecionando...'
+      });
+
+      // Redirecionar baseado no tipo de usuário
+      const userType = getUserTypeFromEmail(loginData.email);
+      redirectUserToDashboard(userType);
+      
     } catch (error: any) {
       toast({
-        title: "Erro",
-        description: error.message || "Ocorreu um erro. Tente novamente.",
-        variant: "destructive",
+        title: 'Erro no login',
+        description: error.message || 'Credenciais inválidas',
+        variant: 'destructive'
       });
     } finally {
       setLoading(false);
     }
   };
 
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!signupData.nome || !signupData.email || !signupData.password) {
+      toast({
+        title: 'Erro',
+        description: 'Por favor, preencha todos os campos obrigatórios.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await signUp(signupData.email, signupData.password, {
+        nome: signupData.nome,
+        telefone: signupData.telefone,
+        endereco: signupData.endereco,
+        tipo: signupData.tipo
+      });
+      
+      toast({
+        title: 'Cadastro realizado!',
+        description: 'Você pode fazer login agora.'
+      });
+
+      // Limpar formulário e voltar para login
+      setSignupData({
+        nome: '',
+        email: '',
+        password: '',
+        telefone: '',
+        endereco: '',
+        tipo: 'cliente'
+      });
+      
+    } catch (error: any) {
+      toast({
+        title: 'Erro no cadastro',
+        description: error.message || 'Erro ao criar conta',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getUserTypeFromEmail = (email: string): string => {
+    if (email === 'cliente@test.com') return 'cliente';
+    if (email === 'restaurante@test.com') return 'restaurante';
+    if (email === 'entregador@test.com') return 'entregador';
+    if (email === 'admin@test.com') return 'admin';
+    return 'cliente';
+  };
+
+  const redirectUserToDashboard = (userType: string) => {
+    switch (userType) {
+      case 'cliente':
+        navigate('/restaurantes');
+        break;
+      case 'restaurante':
+        navigate('/dashboard-restaurante');
+        break;
+      case 'entregador':
+        navigate('/dashboard-entregador');
+        break;
+      case 'admin':
+        navigate('/dashboard-admin');
+        break;
+      default:
+        navigate('/');
+    }
+  };
+
+  const fillTestCredentials = (userType: string) => {
+    const testCredentials = {
+      cliente: { email: 'cliente@test.com', password: '123456' },
+      restaurante: { email: 'restaurante@test.com', password: '123456' },
+      entregador: { email: 'entregador@test.com', password: '123456' },
+      admin: { email: 'admin@test.com', password: '123456' }
+    };
+
+    const credentials = testCredentials[userType as keyof typeof testCredentials];
+    if (credentials) {
+      setLoginData(credentials);
+    }
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-red-50 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-orange-600">
-            {isLogin ? 'Entrar' : 'Criar Conta'}
-          </CardTitle>
-          <CardDescription>
-            {isLogin 
-              ? 'Entre na sua conta para continuar' 
-              : 'Crie sua conta no Z Delivery'
-            }
-          </CardDescription>
-        </CardHeader>
-        
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="nome">Nome completo</Label>
-                  <Input
-                    id="nome"
-                    type="text"
-                    value={nome}
-                    onChange={(e) => setNome(e.target.value)}
-                    required
-                    placeholder="Seu nome completo"
-                  />
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            ZDelivery
+          </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            Sua plataforma de delivery
+          </p>
+        </div>
+
+        <Card className="w-full">
+          <Tabs defaultValue="login" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="login">Login</TabsTrigger>
+              <TabsTrigger value="signup">Cadastro</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="login">
+              <CardHeader>
+                <CardTitle>Fazer Login</CardTitle>
+                <CardDescription>
+                  Entre com sua conta para acessar o sistema
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <div>
+                    <Label htmlFor="email">E-mail</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={loginData.email}
+                      onChange={(e) => setLoginData(prev => ({ ...prev, email: e.target.value }))}
+                      placeholder="seu@email.com"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="password">Senha</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={loginData.password}
+                      onChange={(e) => setLoginData(prev => ({ ...prev, password: e.target.value }))}
+                      placeholder="Sua senha"
+                      required
+                    />
+                  </div>
+
+                  <Button type="submit" className="w-full bg-red-600 hover:bg-red-700" disabled={loading}>
+                    {loading ? 'Entrando...' : 'Entrar'}
+                  </Button>
+                </form>
+
+                {/* Botões de teste */}
+                <div className="mt-6 pt-4 border-t">
+                  <p className="text-sm text-gray-600 mb-3">Contas de teste:</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fillTestCredentials('cliente')}
+                    >
+                      Cliente
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fillTestCredentials('restaurante')}
+                    >
+                      Restaurante
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fillTestCredentials('entregador')}
+                    >
+                      Entregador
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fillTestCredentials('admin')}
+                    >
+                      Admin
+                    </Button>
+                  </div>
                 </div>
+              </CardContent>
+            </TabsContent>
 
-                <div className="space-y-2">
-                  <Label htmlFor="tipo">Tipo de conta</Label>
-                  <Select value={tipo} onValueChange={(value: 'cliente' | 'restaurante' | 'entregador') => setTipo(value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o tipo de conta" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="cliente">Cliente</SelectItem>
-                      <SelectItem value="restaurante">Restaurante</SelectItem>
-                      <SelectItem value="entregador">Entregador</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+            <TabsContent value="signup">
+              <CardHeader>
+                <CardTitle>Criar Conta</CardTitle>
+                <CardDescription>
+                  Cadastre-se para começar a usar o ZDelivery
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSignup} className="space-y-4">
+                  <div>
+                    <Label htmlFor="signup-nome">Nome Completo *</Label>
+                    <Input
+                      id="signup-nome"
+                      type="text"
+                      value={signupData.nome}
+                      onChange={(e) => setSignupData(prev => ({ ...prev, nome: e.target.value }))}
+                      placeholder="Seu nome completo"
+                      required
+                    />
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="telefone">Telefone</Label>
-                  <Input
-                    id="telefone"
-                    type="tel"
-                    value={telefone}
-                    onChange={(e) => setTelefone(e.target.value)}
-                    placeholder="(00) 00000-0000"
-                  />
-                </div>
+                  <div>
+                    <Label htmlFor="signup-email">E-mail *</Label>
+                    <Input
+                      id="signup-email"
+                      type="email"
+                      value={signupData.email}
+                      onChange={(e) => setSignupData(prev => ({ ...prev, email: e.target.value }))}
+                      placeholder="seu@email.com"
+                      required
+                    />
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="endereco">Endereço</Label>
-                  <Input
-                    id="endereco"
-                    type="text"
-                    value={endereco}
-                    onChange={(e) => setEndereco(e.target.value)}
-                    placeholder="Seu endereço completo"
-                  />
-                </div>
-              </>
-            )}
+                  <div>
+                    <Label htmlFor="signup-password">Senha *</Label>
+                    <Input
+                      id="signup-password"
+                      type="password"
+                      value={signupData.password}
+                      onChange={(e) => setSignupData(prev => ({ ...prev, password: e.target.value }))}
+                      placeholder="Sua senha"
+                      required
+                    />
+                  </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                placeholder="seu@email.com"
-              />
-            </div>
+                  <div>
+                    <Label htmlFor="signup-telefone">Telefone</Label>
+                    <Input
+                      id="signup-telefone"
+                      type="tel"
+                      value={signupData.telefone}
+                      onChange={(e) => setSignupData(prev => ({ ...prev, telefone: e.target.value }))}
+                      placeholder="(11) 99999-9999"
+                    />
+                  </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                placeholder="Sua senha"
-                minLength={6}
-              />
-            </div>
+                  <div>
+                    <Label htmlFor="signup-endereco">Endereço</Label>
+                    <Input
+                      id="signup-endereco"
+                      type="text"
+                      value={signupData.endereco}
+                      onChange={(e) => setSignupData(prev => ({ ...prev, endereco: e.target.value }))}
+                      placeholder="Seu endereço completo"
+                    />
+                  </div>
 
-            <Button 
-              type="submit" 
-              className="w-full bg-orange-600 hover:bg-orange-700"
-              disabled={loading}
-            >
-              {loading ? 'Processando...' : (isLogin ? 'Entrar' : 'Criar Conta')}
-            </Button>
-          </form>
+                  <div>
+                    <Label htmlFor="signup-tipo">Tipo de Conta *</Label>
+                    <Select
+                      value={signupData.tipo}
+                      onValueChange={(value: 'cliente' | 'restaurante' | 'entregador') =>
+                        setSignupData(prev => ({ ...prev, tipo: value }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cliente">Cliente</SelectItem>
+                        <SelectItem value="restaurante">Restaurante</SelectItem>
+                        <SelectItem value="entregador">Entregador</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-          <div className="mt-6 text-center">
-            <button
-              type="button"
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-orange-600 hover:text-orange-700 text-sm font-medium"
-            >
-              {isLogin 
-                ? 'Não tem uma conta? Criar conta' 
-                : 'Já tem uma conta? Fazer login'
-              }
-            </button>
-          </div>
-
-          <div className="mt-4 text-center">
-            <Link 
-              to="/" 
-              className="text-gray-600 hover:text-gray-800 text-sm"
-            >
-              ← Voltar para o início
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
+                  <Button type="submit" className="w-full bg-red-600 hover:bg-red-700" disabled={loading}>
+                    {loading ? 'Criando conta...' : 'Criar Conta'}
+                  </Button>
+                </form>
+              </CardContent>
+            </TabsContent>
+          </Tabs>
+        </Card>
+      </div>
     </div>
   );
-}
+};
+
+export default LoginForm;
