@@ -89,14 +89,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Função especial para login com usuários de teste
   const signInWithTestUser = async (email: string, password: string) => {
-    // Para usuários de teste, buscar diretamente no banco
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('email', email)
-      .single();
+    // Dados mockados para usuários de teste
+    const testUsers = {
+      'cliente@test.com': {
+        id: '11111111-1111-1111-1111-111111111111',
+        nome: 'Cliente Teste',
+        email: 'cliente@test.com',
+        tipo: 'cliente' as const,
+        telefone: '(11) 99999-1111',
+        endereco: 'Rua do Cliente, 123, São Paulo, SP',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      'restaurante@test.com': {
+        id: '22222222-2222-2222-2222-222222222222',
+        nome: 'Restaurante Teste',
+        email: 'restaurante@test.com',
+        tipo: 'restaurante' as const,
+        telefone: '(11) 99999-2222',
+        endereco: 'Rua do Restaurante, 456, São Paulo, SP',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      'entregador@test.com': {
+        id: '33333333-3333-3333-3333-333333333333',
+        nome: 'Entregador Teste',
+        email: 'entregador@test.com',
+        tipo: 'entregador' as const,
+        telefone: '(11) 99999-3333',
+        endereco: 'Rua do Entregador, 789, São Paulo, SP',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      'admin@test.com': {
+        id: '44444444-4444-4444-4444-444444444444',
+        nome: 'Admin Teste',
+        email: 'admin@test.com',
+        tipo: 'admin' as const,
+        telefone: '(11) 99999-4444',
+        endereco: 'Rua do Admin, 101, São Paulo, SP',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    };
 
-    if (profileError || !profile) {
+    const profile = testUsers[email as keyof typeof testUsers];
+    
+    if (!profile) {
       throw new Error('Usuário não encontrado');
     }
 
