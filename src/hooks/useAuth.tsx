@@ -165,6 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(profile);
       
       // Salvar no localStorage para persistência
+      localStorage.setItem('testUser', JSON.stringify(profile));
       localStorage.setItem('zdelivery_test_user', JSON.stringify({
         user: mockUser,
         profile: profile
@@ -196,6 +197,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     // Limpar dados de teste se existirem
+    localStorage.removeItem('testUser');
     localStorage.removeItem('zdelivery_test_user');
     
     const { error } = await supabase.auth.signOut();
