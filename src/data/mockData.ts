@@ -173,206 +173,55 @@ export const restaurantes: Restaurante[] = [
 ];
 
 export const produtos = [
-  {
-    id: "1",
-    restauranteId: "1",
-    nome: "Pizza Margherita",
-    descricao: "A clássica pizza com molho de tomate, mussarela e manjericão fresco.",
-    preco: 39.90,
-    categoria: "Pizzas",
-    imagem: "/placeholder.svg",
-    disponivel: true
-  },
-  {
-    id: "2",
-    restauranteId: "1",
-    nome: "Pizza Pepperoni",
-    descricao: "Pizza com molho de tomate, mussarela e pepperoni.",
-    preco: 44.90,
-    categoria: "Pizzas",
-    imagem: "/placeholder.svg",
-    disponivel: true
-  },
-  {
-    id: "3",
-    restauranteId: "2",
-    nome: "Sushi Califórnia",
-    descricao: "Enrolado de sushi com kani, abacate e pepino.",
-    preco: 29.90,
-    categoria: "Sushis",
-    imagem: "/placeholder.svg",
-    disponivel: true
-  },
-  {
-    id: "4",
-    restauranteId: "2",
-    nome: "Sashimi Salmão",
-    descricao: "Fatias frescas de salmão.",
-    preco: 34.90,
-    categoria: "Sashimis",
-    imagem: "/placeholder.svg",
-    disponivel: true
-  },
-  {
-    id: "5",
-    restauranteId: "3",
-    nome: "Açaí Completo",
-    descricao: "Açaí com banana, granola e leite condensado.",
-    preco: 24.90,
-    categoria: "Açaí",
-    imagem: "/placeholder.svg",
-    disponivel: true
-  },
-  {
-    id: "6",
-    restauranteId: "3",
-    nome: "Açaí com Morango",
-    descricao: "Açaí com morangos frescos e calda de chocolate.",
-    preco: 27.90,
-    categoria: "Açaí",
-    imagem: "/placeholder.svg",
-    disponivel: true
-  },
-  {
-    id: "7",
-    restauranteId: "4",
-    nome: "Gelato Pistache",
-    descricao: "Gelato italiano de pistache.",
-    preco: 19.90,
-    categoria: "Gelatos",
-    imagem: "/placeholder.svg",
-    disponivel: true
-  },
-  {
-    id: "8",
-    restauranteId: "4",
-    nome: "Gelato Chocolate",
-    descricao: "Gelato italiano de chocolate belga.",
-    preco: 22.90,
-    categoria: "Gelatos",
-    imagem: "/placeholder.svg",
-    disponivel: true
-  },
-  {
-    id: "9",
-    restauranteId: "5",
-    nome: "Spaghetti Carbonara",
-    descricao: "Spaghetti com molho cremoso de ovos, bacon e queijo parmesão.",
-    preco: 49.90,
-    categoria: "Massas",
-    imagem: "/placeholder.svg",
-    disponivel: true
-  },
-  {
-    id: "10",
-    restauranteId: "5",
-    nome: "Lasanha Bolonhesa",
-    descricao: "Lasanha com molho bolonhesa e queijo mussarela.",
-    preco: 54.90,
-    categoria: "Massas",
-    imagem: "/placeholder.svg",
-    disponivel: true
-  },
-  {
-    id: "11",
-    restauranteId: "6",
-    nome: "Burger Clássico",
-    descricao: "Hambúrguer com carne, queijo, alface, tomate e molho especial.",
-    preco: 34.90,
-    categoria: "Hambúrgueres",
-    imagem: "/placeholder.svg",
-    disponivel: true
-  },
-  {
-    id: "12",
-    restauranteId: "6",
-    nome: "Burger Bacon",
-    descricao: "Hambúrguer com carne, queijo, bacon e cebola caramelizada.",
-    preco: 39.90,
-    categoria: "Hambúrgueres",
-    imagem: "/placeholder.svg",
-    disponivel: true
-  },
-  {
-    id: "13",
-    restauranteId: "7",
-    nome: "Taco de Carne",
-    descricao: "Taco com carne desfiada, guacamole e pico de gallo.",
-    preco: 29.90,
-    categoria: "Tacos",
-    imagem: "/placeholder.svg",
-    disponivel: true
-  },
-  {
-    id: "14",
-    restauranteId: "7",
-    nome: "Burrito Frango",
-    descricao: "Burrito com frango, arroz, feijão e queijo.",
-    preco: 34.90,
-    categoria: "Burritos",
-    imagem: "/placeholder.svg",
-    disponivel: true
-  },
-  {
-    id: "15",
-    restauranteId: "8",
-    nome: "Feijoada",
-    descricao: "Feijoada completa com arroz, couve, farofa e laranja.",
-    preco: 59.90,
-    categoria: "Pratos",
-    imagem: "/placeholder.svg",
-    disponivel: true
-  },
-  {
-    id: "16",
-    restauranteId: "8",
-    nome: "Moqueca",
-    descricao: "Moqueca de peixe com arroz e pirão.",
-    preco: 64.90,
-    categoria: "Pratos",
-    imagem: "/placeholder.svg",
-    disponivel: true
-  },
-    {
-    id: "17",
-    restauranteId: "9",
-    nome: "X-Salada",
-    descricao: "Pão, hambúrguer, queijo, alface e tomate.",
-    preco: 19.90,
-    categoria: "Lanches",
-    imagem: "/placeholder.svg",
-    disponivel: true
-  },
-  {
-    id: "18",
-    restauranteId: "9",
-    nome: "Misto Quente",
-    descricao: "Pão de forma com queijo e presunto.",
-    preco: 14.90,
-    categoria: "Lanches",
-    imagem: "/placeholder.svg",
-    disponivel: true
-  },
-  {
-    id: "19",
-    restauranteId: "10",
-    nome: "Açaí Turbinado",
-    descricao: "Açaí com banana, morango, granola, leite condensado e mel.",
-    preco: 29.90,
-    categoria: "Açaí",
-    imagem: "/placeholder.svg",
-    disponivel: true
-  },
-  {
-    id: "20",
-    restauranteId: "10",
-    nome: "Açaí Fit",
-    descricao: "Açaí com banana, granola e sem adição de açúcar.",
-    preco: 24.90,
-    categoria: "Açaí",
-    imagem: "/placeholder.svg",
-    disponivel: true
-  },
+  // Pizza do Mario
+  { id: "1", restauranteId: "1", nome: "Pizza Margherita", descricao: "Molho de tomate, mussarela e manjericão", preco: 39.90, categoria: "Pizzas", imagem: "/placeholder.svg", disponivel: true },
+  { id: "2", restauranteId: "1", nome: "Pizza Pepperoni", descricao: "Pepperoni, mussarela e molho especial", preco: 44.90, categoria: "Pizzas", imagem: "/placeholder.svg", disponivel: true },
+  { id: "3", restauranteId: "1", nome: "Refrigerante 350ml", descricao: "Coca-Cola gelada", preco: 5.50, categoria: "Bebidas", imagem: "/placeholder.svg", disponivel: true },
+
+  // Sushi Express  
+  { id: "4", restauranteId: "2", nome: "Sushi Califórnia", descricao: "Kani, abacate e pepino", preco: 29.90, categoria: "Sushis", imagem: "/placeholder.svg", disponivel: true },
+  { id: "5", restauranteId: "2", nome: "Sashimi Salmão", descricao: "Fatias frescas de salmão", preco: 34.90, categoria: "Sashimis", imagem: "/placeholder.svg", disponivel: true },
+  { id: "6", restauranteId: "2", nome: "Temaki Salmão", descricao: "Cone com salmão e cream cheese", preco: 18.90, categoria: "Temakis", imagem: "/placeholder.svg", disponivel: true },
+
+  // Açaí da Praia
+  { id: "7", restauranteId: "3", nome: "Açaí Completo", descricao: "Banana, granola e leite condensado", preco: 24.90, categoria: "Açaí", imagem: "/placeholder.svg", disponivel: true },
+  { id: "8", restauranteId: "3", nome: "Açaí com Morango", descricao: "Morangos frescos e calda de chocolate", preco: 27.90, categoria: "Açaí", imagem: "/placeholder.svg", disponivel: true },
+  { id: "9", restauranteId: "3", nome: "Vitamina de Açaí", descricao: "Açaí batido com leite", preco: 15.90, categoria: "Bebidas", imagem: "/placeholder.svg", disponivel: true },
+
+  // Gelato Italiano
+  { id: "10", restauranteId: "4", nome: "Gelato Pistache", descricao: "Gelato italiano de pistache", preco: 19.90, categoria: "Gelatos", imagem: "/placeholder.svg", disponivel: true },
+  { id: "11", restauranteId: "4", nome: "Gelato Chocolate", descricao: "Chocolate belga premium", preco: 22.90, categoria: "Gelatos", imagem: "/placeholder.svg", disponivel: true },
+  { id: "12", restauranteId: "4", nome: "Gelato Morango", descricao: "Morango natural", preco: 20.90, categoria: "Gelatos", imagem: "/placeholder.svg", disponivel: true },
+
+  // Cantina da Nonna
+  { id: "13", restauranteId: "5", nome: "Spaghetti Carbonara", descricao: "Ovos, bacon e parmesão", preco: 49.90, categoria: "Massas", imagem: "/placeholder.svg", disponivel: true },
+  { id: "14", restauranteId: "5", nome: "Lasanha Bolonhesa", descricao: "Molho bolonhesa e mussarela", preco: 54.90, categoria: "Massas", imagem: "/placeholder.svg", disponivel: true },
+  { id: "15", restauranteId: "5", nome: "Risotto Funghi", descricao: "Arroz cremoso com cogumelos", preco: 42.90, categoria: "Risotos", imagem: "/placeholder.svg", disponivel: true },
+
+  // Burger King Size
+  { id: "16", restauranteId: "6", nome: "Burger Clássico", descricao: "Carne, queijo, alface e tomate", preco: 34.90, categoria: "Hambúrgueres", imagem: "/placeholder.svg", disponivel: true },
+  { id: "17", restauranteId: "6", nome: "Burger Bacon", descricao: "Bacon, queijo e cebola caramelizada", preco: 39.90, categoria: "Hambúrgueres", imagem: "/placeholder.svg", disponivel: true },
+  { id: "18", restauranteId: "6", nome: "Batata Frita G", descricao: "Batatas crocantes", preco: 12.90, categoria: "Acompanhamentos", imagem: "/placeholder.svg", disponivel: true },
+
+  // Tacos Mexicanos
+  { id: "19", restauranteId: "7", nome: "Taco de Carne", descricao: "Carne desfiada e guacamole", preco: 29.90, categoria: "Tacos", imagem: "/placeholder.svg", disponivel: true },
+  { id: "20", restauranteId: "7", nome: "Burrito Frango", descricao: "Frango, arroz e feijão", preco: 34.90, categoria: "Burritos", imagem: "/placeholder.svg", disponivel: true },
+  { id: "21", restauranteId: "7", nome: "Nachos Supreme", descricao: "Nachos com queijo e jalapeño", preco: 19.90, categoria: "Entradas", imagem: "/placeholder.svg", disponivel: true },
+
+  // Feijoada da Casa
+  { id: "22", restauranteId: "8", nome: "Feijoada Completa", descricao: "Arroz, couve, farofa e laranja", preco: 59.90, categoria: "Pratos", imagem: "/placeholder.svg", disponivel: true },
+  { id: "23", restauranteId: "8", nome: "Moqueca de Peixe", descricao: "Peixe, arroz e pirão", preco: 64.90, categoria: "Pratos", imagem: "/placeholder.svg", disponivel: true },
+  { id: "24", restauranteId: "8", nome: "Caipirinha", descricao: "Cachaça, limão e açúcar", preco: 15.90, categoria: "Bebidas", imagem: "/placeholder.svg", disponivel: true },
+
+  // Lanchonete do João
+  { id: "25", restauranteId: "9", nome: "X-Salada", descricao: "Hambúrguer, queijo, alface e tomate", preco: 19.90, categoria: "Lanches", imagem: "/placeholder.svg", disponivel: true },
+  { id: "26", restauranteId: "9", nome: "Misto Quente", descricao: "Queijo e presunto", preco: 14.90, categoria: "Lanches", imagem: "/placeholder.svg", disponivel: true },
+  { id: "27", restauranteId: "9", nome: "Suco Natural", descricao: "Laranja, limão ou acerola", preco: 8.90, categoria: "Bebidas", imagem: "/placeholder.svg", disponivel: true },
+
+  // Açaí Tropical
+  { id: "28", restauranteId: "10", nome: "Açaí Turbinado", descricao: "Banana, morango, granola e mel", preco: 29.90, categoria: "Açaí", imagem: "/placeholder.svg", disponivel: true },
+  { id: "29", restauranteId: "10", nome: "Açaí Fit", descricao: "Banana, granola, sem açúcar", preco: 24.90, categoria: "Açaí", imagem: "/placeholder.svg", disponivel: true },
+  { id: "30", restauranteId: "10", nome: "Smoothie Tropical", descricao: "Açaí, manga e coco", preco: 18.90, categoria: "Bebidas", imagem: "/placeholder.svg", disponivel: true }
 ];
 
 export const entregadores = [
