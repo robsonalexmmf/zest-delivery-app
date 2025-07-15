@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { MapPin, Edit } from 'lucide-react';
 import { restaurantes } from '@/data/mockData';
 import { toast } from '@/hooks/use-toast';
+import { pedidosService } from '@/services/pedidosService';
 
 interface CupomAplicado {
   codigo: string;
@@ -151,11 +152,31 @@ const CarrinhoPage: React.FC = () => {
     } else {
       // Simular outros métodos de pagamento
       if (pagamento === 'cartao') {
-        toast({
-          title: 'Processando pagamento...',
-          description: 'Aguarde enquanto processamos seu cartão.',
-        });
-        setTimeout(() => confirmarPedido(novoIdPedido), 3000);
+        // Simular tela de cartão de crédito
+        const dadosCartao = prompt('Número do cartão (simulação):\nDigite qualquer número para continuar');
+        if (dadosCartao) {
+          const cvv = prompt('CVV (simulação):');
+          if (cvv) {
+            toast({
+              title: 'Processando pagamento...',
+              description: 'Aguarde enquanto processamos seu cartão.',
+            });
+            setTimeout(() => confirmarPedido(novoIdPedido), 3000);
+          }
+        }
+      } else if (pagamento === 'dinheiro') {
+        // Para dinheiro na entrega, perguntar sobre troco
+        const precisaTroco = confirm('Vai precisar de troco?');
+        if (precisaTroco) {
+          const valorTroco = prompt('Para quanto você precisa de troco?');
+          if (valorTroco) {
+            toast({
+              title: 'Pedido confirmado!',
+              description: `Entregador levará troco para R$ ${valorTroco}`,
+            });
+          }
+        }
+        confirmarPedido(novoIdPedido);
       } else {
         confirmarPedido(novoIdPedido);
       }
@@ -163,26 +184,37 @@ const CarrinhoPage: React.FC = () => {
   };
 
   const confirmarPedido = (id: string) => {
-    // Simular criação do pedido
-    const pedido = {
-      id,
-      produtos: carrinho,
-      endereco: formatarEnderecoCompleto(enderecoSelecionado!),
-      pagamento,
-      observacoes,
-      cupom: cupomAplicado,
-      subtotal,
-      taxaEntrega,
-      valorDesconto,
+    // Criar pedido usando o serviço
+    const pedidoData = {
+      cliente: {
+        nome: user.nome,
+        endereco: formatarEnderecoCompleto(enderecoSelecionado!),
+        telefone: user.telefone || '(11) 99999-9999'
+      },
+      restaurante: {
+        nome: restaurantePedido?.nome || 'Restaurante',
+        endereco: 'Rua das Flores, 123 - Centro',
+        telefone: '(11) 3333-3333'
+      },
+      itens: carrinho.map(item => ({
+        nome: item.nome,
+        quantidade: item.quantidade,
+        preco: item.preco
+      })),
       total: totalFinal,
-      status: 'recebido',
-      dataCriacao: new Date().toISOString()
+      status: 'pendente' as const,
+      data: new Date().toLocaleDateString(),
+      hora: new Date().toLocaleTimeString(),
+      metodoPagamento: pagamento,
+      valorEntrega: taxaEntrega,
+      tempoEstimado: '30min',
+      observacoes
     };
 
-    // Salvar pedido e limpar carrinho
-    const pedidosAnteriores = JSON.parse(localStorage.getItem('zdelivery_pedidos') || '[]');
-    pedidosAnteriores.push(pedido);
-    localStorage.setItem('zdelivery_pedidos', JSON.stringify(pedidosAnteriores));
+    // Usar o serviço de pedidos para criar o pedido
+    const pedidoIdCriado = pedidosService.criarPedido(pedidoData);
+
+    // Limpar carrinho
     localStorage.removeItem('zdelivery_carrinho');
 
     toast({

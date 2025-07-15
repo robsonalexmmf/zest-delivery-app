@@ -17,6 +17,19 @@ const EntregasDisponiveisPage: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Verificar se é usuário de teste primeiro
+    const testUser = localStorage.getItem('testUser');
+    if (testUser) {
+      const parsedTestUser = JSON.parse(testUser);
+      if (parsedTestUser.tipo !== 'entregador') {
+        navigate('/login');
+      } else {
+        setUser(parsedTestUser);
+      }
+      return;
+    }
+
+    // Verificar usuário normal
     const userData = localStorage.getItem('zdelivery_user');
     if (userData) {
       const parsedUser = JSON.parse(userData);

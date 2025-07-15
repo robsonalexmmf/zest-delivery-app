@@ -370,6 +370,84 @@ const DashboardAdmin: React.FC = () => {
     });
   };
 
+  const exportarRelatorio = () => {
+    toast({
+      title: 'Gerando relatório...',
+      description: 'Seu relatório está sendo preparado.',
+    });
+    
+    setTimeout(() => {
+      const dadosRelatorio = {
+        usuarios: stats.totalClientes + stats.totalRestaurantes + stats.totalEntregadores,
+        pedidos: stats.totalPedidos,
+        receita: stats.receitaTotal,
+        data: new Date().toLocaleDateString()
+      };
+      
+      const blob = new Blob([JSON.stringify(dadosRelatorio, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `relatorio-zdelivery-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      
+      toast({
+        title: 'Relatório exportado!',
+        description: 'Download iniciado com sucesso.',
+      });
+    }, 2000);
+  };
+
+  const enviarNewsletter = () => {
+    const assunto = prompt('Assunto da newsletter:');
+    if (assunto) {
+      const conteudo = prompt('Conteúdo da newsletter:');
+      if (conteudo) {
+        toast({
+          title: 'Enviando newsletter...',
+          description: 'Newsletter sendo enviada para todos os usuários.',
+        });
+        
+        setTimeout(() => {
+          toast({
+            title: 'Newsletter enviada!',
+            description: `Newsletter "${assunto}" enviada para ${stats.totalClientes + stats.totalRestaurantes + stats.totalEntregadores} usuários.`,
+          });
+        }, 3000);
+      }
+    }
+  };
+
+  const fazerBackup = () => {
+    toast({
+      title: 'Iniciando backup...',
+      description: 'Backup do sistema sendo criado.',
+    });
+    
+    setTimeout(() => {
+      const backupData = {
+        usuarios,
+        pedidos,
+        mensalidades,
+        suportes,
+        configuracoes,
+        timestamp: new Date().toISOString()
+      };
+      
+      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `backup-zdelivery-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      
+      toast({
+        title: 'Backup concluído!',
+        description: 'Backup do sistema salvo com sucesso.',
+      });
+    }, 4000);
+  };
+
   const getStatusBadge = (status: string) => {
     const colors = {
       ativo: 'bg-green-100 text-green-800',
@@ -917,27 +995,39 @@ const DashboardAdmin: React.FC = () => {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Ações Rápidas</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <Button variant="outline" className="w-full justify-start">
-                      <FileText className="h-4 w-4 mr-2" />
-                      Exportar Relatório
-                    </Button>
-                    <Button variant="outline" className="w-full justify-start">
-                      <Mail className="h-4 w-4 mr-2" />
-                      Enviar Newsletter
-                    </Button>
-                    <Button variant="outline" className="w-full justify-start">
-                      <Settings className="h-4 w-4 mr-2" />
-                      Backup Sistema
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Ações Rápidas</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <Button 
+                        variant="outline" 
+                        className="w-full justify-start"
+                        onClick={exportarRelatorio}
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Exportar Relatório
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        className="w-full justify-start"
+                        onClick={enviarNewsletter}
+                      >
+                        <Mail className="h-4 w-4 mr-2" />
+                        Enviar Newsletter
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        className="w-full justify-start"
+                        onClick={fazerBackup}
+                      >
+                        <Settings className="h-4 w-4 mr-2" />
+                        Backup Sistema
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
             </div>
           </TabsContent>
         </Tabs>

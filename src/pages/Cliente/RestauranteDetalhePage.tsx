@@ -25,13 +25,23 @@ const RestauranteDetalhePage: React.FC = () => {
       navigate('/login');
     }
 
-    // Buscar restaurante
-    const rest = restaurantes.find(r => r.id === id);
-    if (rest) {
-      setRestaurante(rest);
-      // Buscar produtos do restaurante
-      const prods = produtos.filter(p => p.restauranteId === id);
-      setProdutosRestaurante(prods);
+    // Buscar restaurante pelo slug
+    const restauranteEncontrado = restaurantes.find(r => 
+      r.nome.toLowerCase().replace(/ /g, '-') === id
+    );
+    if (restauranteEncontrado) {
+      setRestaurante(restauranteEncontrado);
+      // Buscar produtos dos dados globais primeiro
+      const produtosGlobais = JSON.parse(localStorage.getItem('zdelivery_produtos_globais') || '{}');
+      const produtosDoRestaurante = produtosGlobais[restauranteEncontrado.nome] || [];
+      
+      // Se não houver produtos globais, usar produtos mock
+      if (produtosDoRestaurante.length === 0) {
+        const produtosMock = produtos.filter(p => p.restauranteId === restauranteEncontrado.id);
+        setProdutosRestaurante(produtosMock);
+      } else {
+        setProdutosRestaurante(produtosDoRestaurante);
+      }
     } else {
       navigate('/restaurantes');
     }

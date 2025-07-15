@@ -91,13 +91,16 @@ const DashboardEntregador: React.FC = () => {
   };
 
   const handleConfirmarEntrega = (pedidoId: string) => {
-    const sucesso = pedidosService.atualizarStatusPedido(pedidoId, 'entregue');
-    
-    if (sucesso) {
-      toast({
-        title: 'Entrega confirmada!',
-        description: `Pedido ${pedidoId} foi marcado como entregue.`,
-      });
+    const confirmar = window.confirm('Confirmar que o pedido foi entregue?');
+    if (confirmar) {
+      const sucesso = pedidosService.atualizarStatusPedido(pedidoId, 'entregue');
+      
+      if (sucesso) {
+        toast({
+          title: 'Entrega confirmada!',
+          description: `Pedido ${pedidoId} foi marcado como entregue.`,
+        });
+      }
     }
   };
 

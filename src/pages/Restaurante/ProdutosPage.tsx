@@ -42,7 +42,12 @@ const ProdutosPage: React.FC = () => {
     // Primeiro tentar carregar do localStorage
     const produtosSalvos = localStorage.getItem('restaurant_products');
     if (produtosSalvos) {
-      setProdutos(JSON.parse(produtosSalvos));
+      const produtos = JSON.parse(produtosSalvos);
+      setProdutos(produtos);
+      // Sincronizar com dados globais
+      const produtosGlobais = JSON.parse(localStorage.getItem('zdelivery_produtos_globais') || '{}');
+      produtosGlobais[user?.nome || 'Restaurante'] = produtos;
+      localStorage.setItem('zdelivery_produtos_globais', JSON.stringify(produtosGlobais));
       return;
     }
 
@@ -92,6 +97,11 @@ const ProdutosPage: React.FC = () => {
     ];
     setProdutos(produtosMockados);
     localStorage.setItem('restaurant_products', JSON.stringify(produtosMockados));
+    
+    // Também salvar nos dados globais
+    const produtosGlobais = JSON.parse(localStorage.getItem('zdelivery_produtos_globais') || '{}');
+    produtosGlobais[user?.nome || 'Restaurante'] = produtosMockados;
+    localStorage.setItem('zdelivery_produtos_globais', JSON.stringify(produtosGlobais));
   };
 
   const [formData, setFormData] = useState({
@@ -113,6 +123,11 @@ const ProdutosPage: React.FC = () => {
   const salvarProdutos = (novosProdutos: any[]) => {
     setProdutos(novosProdutos);
     localStorage.setItem('restaurant_products', JSON.stringify(novosProdutos));
+    
+    // Também salvar em uma chave global para que o cliente possa acessar
+    const produtosGlobais = JSON.parse(localStorage.getItem('zdelivery_produtos_globais') || '{}');
+    produtosGlobais[user.nome] = novosProdutos;
+    localStorage.setItem('zdelivery_produtos_globais', JSON.stringify(produtosGlobais));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
