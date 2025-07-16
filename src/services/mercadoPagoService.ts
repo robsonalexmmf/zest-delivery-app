@@ -26,12 +26,25 @@ class MercadoPagoService {
 
   constructor() {
     this.loadConfig();
+    this.initializeWithDefaultConfig();
   }
 
   private loadConfig() {
     const savedConfig = localStorage.getItem('zdelivery_mercadopago_config');
     if (savedConfig) {
       this.config = JSON.parse(savedConfig);
+    }
+  }
+
+  private initializeWithDefaultConfig() {
+    // Configurar automaticamente com a chave fornecida
+    if (!this.config) {
+      this.config = {
+        accessToken: 'APP_USR-3212728345390685-060911-f764f941b8b326a90bf56e30a417d512-40217673',
+        publicKey: 'APP_USR-3212728345390685-060911-f764f941b8b326a90bf56e30a417d512-40217673',
+        ativo: true
+      };
+      localStorage.setItem('zdelivery_mercadopago_config', JSON.stringify(this.config));
     }
   }
 

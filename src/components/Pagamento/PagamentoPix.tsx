@@ -139,25 +139,6 @@ const PagamentoPix: React.FC<PagamentoPixProps> = ({
     }
   };
 
-  const handleSimularPagamento = () => {
-    setPagamentoProcessando(true);
-    
-    toast({
-      title: 'Processando pagamento...',
-      description: 'Aguarde enquanto confirmamos o pagamento.',
-    });
-
-    setTimeout(() => {
-      setPagamentoProcessando(false);
-      onPagamentoConfirmado();
-      onClose();
-      
-      toast({
-        title: 'Pagamento confirmado!',
-        description: 'Seu pedido foi recebido pelo restaurante.',
-      });
-    }, 3000);
-  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -287,15 +268,6 @@ const PagamentoPix: React.FC<PagamentoPixProps> = ({
 
           {/* Botões de Ação */}
           <div className="space-y-3">
-            {/* Botão para simular pagamento (apenas para demo) */}
-            <Button
-              onClick={handleSimularPagamento}
-              disabled={pagamentoProcessando || !pixData}
-              className="w-full bg-green-600 hover:bg-green-700"
-            >
-              {pagamentoProcessando ? 'Processando...' : 'Simular Pagamento (Demo)'}
-            </Button>
-
             <Button
               onClick={onClose}
               variant="outline"
