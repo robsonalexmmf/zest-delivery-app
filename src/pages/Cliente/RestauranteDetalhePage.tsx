@@ -25,10 +25,8 @@ const RestauranteDetalhePage: React.FC = () => {
       navigate('/login');
     }
 
-    // Buscar restaurante pelo slug
-    const restauranteEncontrado = restaurantes.find(r => 
-      r.nome.toLowerCase().replace(/ /g, '-') === id
-    );
+    // Buscar restaurante pelo ID
+    const restauranteEncontrado = restaurantes.find(r => r.id === id);
     if (restauranteEncontrado) {
       setRestaurante(restauranteEncontrado);
       // Buscar produtos dos dados globais primeiro
