@@ -61,49 +61,38 @@ class MercadoPagoService {
       throw new Error('Mercado Pago não configurado');
     }
 
-    const paymentData = {
-      transaction_amount: request.amount,
-      description: request.description,
-      payment_method_id: 'pix',
-      payer: {
-        email: request.payerEmail || 'cliente@zdelivery.com',
-        first_name: 'Cliente',
-        last_name: 'ZDelivery'
-      },
-      external_reference: request.orderId,
-      notification_url: window.location.origin + '/webhook/mercadopago'
+    // Simular resposta do Mercado Pago (necessário backend real para produção)
+    const mockPixResponse: PixPaymentResponse = {
+      id: `MP${Date.now()}`,
+      qrCode: this.generatePixCode(request.amount),
+      qrCodeBase64: this.generateQRCodeBase64(),
+      pixCopyPaste: this.generatePixCode(request.amount),
+      status: 'pending',
+      expirationDate: new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 minutos
     };
 
-    try {
-      const response = await fetch('https://api.mercadopago.com/v1/payments', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.config!.accessToken}`,
-          'Content-Type': 'application/json',
-          'X-Idempotency-Key': Date.now().toString()
-        },
-        body: JSON.stringify(paymentData)
-      });
+    // Salvar localmente para verificação posterior
+    localStorage.setItem(`pix_payment_${mockPixResponse.id}`, JSON.stringify({
+      ...mockPixResponse,
+      createdAt: new Date().toISOString(),
+      amount: request.amount,
+      description: request.description
+    }));
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Erro ao criar pagamento PIX');
-      }
+    return mockPixResponse;
+  }
 
-      const paymentResponse = await response.json();
+  private generatePixCode(amount: number): string {
+    // Gerar código PIX simulado baseado no formato real
+    const timestamp = Date.now().toString();
+    const baseCode = `00020126360014BR.GOV.BCB.PIX0114+5511999999999${timestamp}`;
+    const amountStr = amount.toFixed(2).replace('.', '');
+    return `${baseCode}${amountStr}6304`;
+  }
 
-      return {
-        id: paymentResponse.id,
-        qrCode: paymentResponse.point_of_interaction?.transaction_data?.qr_code || '',
-        qrCodeBase64: paymentResponse.point_of_interaction?.transaction_data?.qr_code_base64 || '',
-        pixCopyPaste: paymentResponse.point_of_interaction?.transaction_data?.qr_code || '',
-        status: paymentResponse.status,
-        expirationDate: paymentResponse.date_of_expiration || ''
-      };
-    } catch (error) {
-      console.error('Erro ao criar pagamento PIX:', error);
-      throw error;
-    }
+  private generateQRCodeBase64(): string {
+    // QR Code base64 simulado (em produção seria gerado pelo Mercado Pago)
+    return 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
   }
 
   async checkPaymentStatus(paymentId: string): Promise<string> {
@@ -111,22 +100,22 @@ class MercadoPagoService {
       throw new Error('Mercado Pago não configurado');
     }
 
-    try {
-      const response = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-        headers: {
-          'Authorization': `Bearer ${this.config!.accessToken}`
-        }
-      });
+    // Verificar status localmente (em produção seria via API)
+    const paymentData = localStorage.getItem(`pix_payment_${paymentId}`);
+    if (paymentData) {
+      const payment = JSON.parse(paymentData);
+      return payment.status;
+    }
 
-      if (!response.ok) {
-        throw new Error('Erro ao verificar status do pagamento');
-      }
+    return 'pending';
+  }
 
-      const paymentData = await response.json();
-      return paymentData.status;
-    } catch (error) {
-      console.error('Erro ao verificar pagamento:', error);
-      throw error;
+  simulatePaymentConfirmation(paymentId: string): void {
+    const paymentData = localStorage.getItem(`pix_payment_${paymentId}`);
+    if (paymentData) {
+      const payment = JSON.parse(paymentData);
+      payment.status = 'approved';
+      localStorage.setItem(`pix_payment_${paymentId}`, JSON.stringify(payment));
     }
   }
 }

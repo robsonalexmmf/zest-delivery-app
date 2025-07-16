@@ -118,6 +118,30 @@ const PagamentoPix: React.FC<PagamentoPixProps> = ({
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const handleSimularPagamento = () => {
+    if (!pixData?.id) return;
+    
+    setPagamentoProcessando(true);
+    
+    toast({
+      title: 'Processando pagamento...',
+      description: 'Confirmando o pagamento PIX.',
+    });
+
+    // Simular confirmação do pagamento
+    setTimeout(() => {
+      mercadoPagoService.simulatePaymentConfirmation(pixData.id);
+      setPagamentoProcessando(false);
+      onPagamentoConfirmado();
+      onClose();
+      
+      toast({
+        title: 'Pagamento confirmado!',
+        description: 'Seu pedido foi recebido pelo restaurante.',
+      });
+    }, 2000);
+  };
+
   const handleCopiarPix = async () => {
     if (!pixData?.pixCopyPaste) return;
 
@@ -268,6 +292,16 @@ const PagamentoPix: React.FC<PagamentoPixProps> = ({
 
           {/* Botões de Ação */}
           <div className="space-y-3">
+            {pixData && (
+              <Button
+                onClick={handleSimularPagamento}
+                disabled={pagamentoProcessando}
+                className="w-full bg-green-600 hover:bg-green-700"
+              >
+                {pagamentoProcessando ? 'Processando...' : 'Confirmar Pagamento PIX'}
+              </Button>
+            )}
+            
             <Button
               onClick={onClose}
               variant="outline"
