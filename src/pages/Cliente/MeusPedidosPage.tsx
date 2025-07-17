@@ -51,59 +51,64 @@ const MeusPedidosPage: React.FC = () => {
   useEffect(() => {
     if (!user) return;
 
-    const unsubscribe = pedidosService.subscribe((pedidos) => {
-      const pedidosCliente = pedidosService.getPedidosPorCliente(user.nome);
-      
-      // Detectar mudanças de status
-      const pedidoAnterior = meusPedidos.find(p => p.status !== 'entregue' && p.status !== 'cancelado');
-      const pedidoAtual = pedidosCliente.find(p => p.id === pedidoAnterior?.id);
-      
-      if (pedidoAnterior && pedidoAtual && pedidoAnterior.status !== pedidoAtual.status) {
-        let mensagem = '';
-        switch (pedidoAtual.status) {
-          case 'em_preparo':
-            mensagem = `Seu pedido ${pedidoAtual.id} está sendo preparado pelo restaurante`;
-            break;
-          case 'pronto':
-            mensagem = `Seu pedido ${pedidoAtual.id} está pronto e aguardando entregador`;
-            break;
-          case 'saiu_para_entrega':
-            mensagem = `Seu pedido ${pedidoAtual.id} saiu para entrega com ${pedidoAtual.entregador?.nome}`;
-            break;
-          case 'entregue':
-            mensagem = `Seu pedido ${pedidoAtual.id} foi entregue com sucesso!`;
-            break;
-          case 'cancelado':
-            mensagem = `Seu pedido ${pedidoAtual.id} foi cancelado`;
-            break;
-        }
-        
-        if (mensagem) {
-          toast({
-            title: '📱 Atualização do Pedido',
-            description: mensagem,
-          });
-
-          // Notificação do navegador
-          if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('ZDelivery - Atualização do Pedido', {
-              body: mensagem,
-              icon: '/favicon.ico'
-            });
-          }
-        }
-      }
-      
-      setMeusPedidos(pedidosCliente);
-    });
-
     // Solicitar permissão para notificações
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
 
+    let pedidosAnteriores: Pedido[] = [];
+
+    const unsubscribe = pedidosService.subscribe((pedidos) => {
+      const pedidosCliente = pedidosService.getPedidosPorCliente(user.nome);
+      
+      // Detectar mudanças de status comparando com estado anterior local
+      pedidosCliente.forEach(pedidoAtual => {
+        const pedidoAnterior = pedidosAnteriores.find(p => p.id === pedidoAtual.id);
+        
+        if (pedidoAnterior && pedidoAnterior.status !== pedidoAtual.status) {
+          let mensagem = '';
+          switch (pedidoAtual.status) {
+            case 'em_preparo':
+              mensagem = `Seu pedido ${pedidoAtual.id} está sendo preparado pelo restaurante`;
+              break;
+            case 'pronto':
+              mensagem = `Seu pedido ${pedidoAtual.id} está pronto e aguardando entregador`;
+              break;
+            case 'saiu_para_entrega':
+              mensagem = `Seu pedido ${pedidoAtual.id} saiu para entrega com ${pedidoAtual.entregador?.nome}`;
+              break;
+            case 'entregue':
+              mensagem = `Seu pedido ${pedidoAtual.id} foi entregue com sucesso!`;
+              break;
+            case 'cancelado':
+              mensagem = `Seu pedido ${pedidoAtual.id} foi cancelado`;
+              break;
+          }
+          
+          if (mensagem) {
+            toast({
+              title: '📱 Atualização do Pedido',
+              description: mensagem,
+            });
+
+            // Notificação do navegador
+            if ('Notification' in window && Notification.permission === 'granted') {
+              new Notification('ZDelivery - Atualização do Pedido', {
+                body: mensagem,
+                icon: '/favicon.ico'
+              });
+            }
+          }
+        }
+      });
+      
+      // Atualizar referência dos pedidos anteriores
+      pedidosAnteriores = [...pedidosCliente];
+      setMeusPedidos(pedidosCliente);
+    });
+
     return unsubscribe;
-  }, [user, meusPedidos]);
+  }, [user]);
 
   const getStatusBadge = (status: string) => {
     const statusMap = {
