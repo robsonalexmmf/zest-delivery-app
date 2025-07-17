@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -11,6 +12,7 @@ import Header from '@/components/Layout/Header';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
 import { pagamentoService } from '@/services/pagamentoService';
+import { pedidosService } from '@/services/pedidosService';
 
 interface Usuario {
   id: string;
@@ -68,6 +70,7 @@ interface Configuracao {
 }
 
 const DashboardAdmin: React.FC = () => {
+  const [user, setUser] = useState<any>(null);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [mensalidades, setMensalidades] = useState<Mensalidade[]>([]);
@@ -92,10 +95,41 @@ const DashboardAdmin: React.FC = () => {
     crescimentoMensal: 15.3,
     ticketMedio: 42.50
   });
+  const navigate = useNavigate();
 
   useEffect(() => {
-    carregarDados();
-  }, []);
+    // Verificar se é usuário de teste primeiro
+    const testUser = localStorage.getItem('zdelivery_test_user');
+    if (testUser) {
+      try {
+        const { profile } = JSON.parse(testUser);
+        if (profile.tipo !== 'admin') {
+          navigate('/login');
+        } else {
+          setUser(profile);
+          carregarDados();
+        }
+        return;
+      } catch (error) {
+        console.error('Error loading test user:', error);
+        localStorage.removeItem('zdelivery_test_user');
+      }
+    }
+
+    // Verificar usuário normal
+    const userData = localStorage.getItem('zdelivery_user');
+    if (userData) {
+      const parsedUser = JSON.parse(userData);
+      if (parsedUser.tipo !== 'admin') {
+        navigate('/login');
+      } else {
+        setUser(parsedUser);
+        carregarDados();
+      }
+    } else {
+      navigate('/login');
+    }
+  }, [navigate]);
 
   const carregarDados = () => {
     // Simulando dados expandidos de usuários
@@ -115,7 +149,7 @@ const DashboardAdmin: React.FC = () => {
       },
       {
         id: '2',
-        nome: 'Pizza Deliciosa',
+        nome: 'Pizzaria do Mario',
         email: 'restaurante@test.com',
         telefone: '(11) 3333-3333',
         endereco: 'Rua das Flores, 123',
@@ -147,55 +181,22 @@ const DashboardAdmin: React.FC = () => {
         ultimoAcesso: '2024-01-19',
         totalPedidos: 8,
         totalGasto: 234.90
-      },
-      {
-        id: '5',
-        nome: 'Burger House',
-        email: 'burger@test.com',
-        telefone: '(11) 4444-4444',
-        endereco: 'Av. Principal, 321',
-        tipo: 'restaurante',
-        status: 'suspenso',
-        dataCadastro: '2024-01-05',
-        ultimoAcesso: '2024-01-15'
       }
     ];
 
-    // Dados expandidos de pedidos
-    const pedidosMock: Pedido[] = [
-      {
-        id: '1',
-        cliente: 'João Silva',
-        restaurante: 'Pizza Deliciosa',
-        entregador: 'Carlos Entregador',
-        status: 'entregue',
-        valor: 45.90,
-        data: '2024-01-20',
-        hora: '19:30',
-        metodoPagamento: 'pix'
-      },
-      {
-        id: '2',
-        cliente: 'Maria Santos',
-        restaurante: 'Burger House',
-        status: 'preparando',
-        valor: 32.50,
-        data: '2024-01-20',
-        hora: '20:15',
-        metodoPagamento: 'cartao'
-      },
-      {
-        id: '3',
-        cliente: 'João Silva',
-        restaurante: 'Pizza Deliciosa',
-        entregador: 'Carlos Entregador',
-        status: 'entregue',
-        valor: 67.80,
-        data: '2024-01-19',
-        hora: '18:45',
-        metodoPagamento: 'dinheiro'
-      }
-    ];
+    // Carregar pedidos do serviço
+    const todosPedidos = pedidosService.getPedidos();
+    const pedidosMock: Pedido[] = todosPedidos.map(p => ({
+      id: p.id,
+      cliente: p.cliente.nome,
+      restaurante: p.restaurante.nome,
+      entregador: p.entregador?.nome,
+      status: p.status,
+      valor: p.total,
+      data: p.data,
+      hora: p.hora,
+      metodoPagamento: p.metodoPagamento
+    }));
 
     // Dados de suporte
     const suportesMock: Suporte[] = [
@@ -211,7 +212,7 @@ const DashboardAdmin: React.FC = () => {
       },
       {
         id: '2',
-        usuario: 'Pizza Deliciosa',
+        usuario: 'Pizzaria do Mario',
         tipo: 'restaurante',
         assunto: 'Dúvida sobre comissões',
         status: 'em_andamento',
@@ -267,7 +268,7 @@ const DashboardAdmin: React.FC = () => {
     const mensalidadesMock: Mensalidade[] = [
       {
         id: '1',
-        restaurante: 'Pizza Deliciosa',
+        restaurante: 'Pizzaria do Mario',
         plano: 'premium',
         valor: 79.90,
         vencimento: '2024-01-25',
@@ -311,14 +312,14 @@ const DashboardAdmin: React.FC = () => {
       totalRestaurantes: usuariosMock.filter(u => u.tipo === 'restaurante').length,
       totalEntregadores: usuariosMock.filter(u => u.tipo === 'entregador').length,
       totalPedidos: pedidosMock.length,
-      pedidosHoje: pedidosMock.filter(p => p.data === '2024-01-20').length,
+      pedidosHoje: pedidosMock.filter(p => p.data === new Date().toISOString().split('T')[0]).length,
       receitaTotal: pedidosMock.reduce((total, p) => total + p.valor, 0),
       mensalidadesPendentes,
       receitaMensalidades,
       suportesAbertos,
       mediaAvaliacoes: 4.5,
       crescimentoMensal: 15.3,
-      ticketMedio: pedidosMock.reduce((total, p) => total + p.valor, 0) / pedidosMock.length
+      ticketMedio: pedidosMock.length > 0 ? pedidosMock.reduce((total, p) => total + p.valor, 0) / pedidosMock.length : 0
     });
   };
 
@@ -370,94 +371,18 @@ const DashboardAdmin: React.FC = () => {
     });
   };
 
-  const exportarRelatorio = () => {
-    toast({
-      title: 'Gerando relatório...',
-      description: 'Seu relatório está sendo preparado.',
-    });
-    
-    setTimeout(() => {
-      const dadosRelatorio = {
-        usuarios: stats.totalClientes + stats.totalRestaurantes + stats.totalEntregadores,
-        pedidos: stats.totalPedidos,
-        receita: stats.receitaTotal,
-        data: new Date().toLocaleDateString()
-      };
-      
-      const blob = new Blob([JSON.stringify(dadosRelatorio, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `relatorio-zdelivery-${new Date().toISOString().split('T')[0]}.json`;
-      a.click();
-      
-      toast({
-        title: 'Relatório exportado!',
-        description: 'Download iniciado com sucesso.',
-      });
-    }, 2000);
-  };
-
-  const enviarNewsletter = () => {
-    const assunto = prompt('Assunto da newsletter:');
-    if (assunto) {
-      const conteudo = prompt('Conteúdo da newsletter:');
-      if (conteudo) {
-        toast({
-          title: 'Enviando newsletter...',
-          description: 'Newsletter sendo enviada para todos os usuários.',
-        });
-        
-        setTimeout(() => {
-          toast({
-            title: 'Newsletter enviada!',
-            description: `Newsletter "${assunto}" enviada para ${stats.totalClientes + stats.totalRestaurantes + stats.totalEntregadores} usuários.`,
-          });
-        }, 3000);
-      }
-    }
-  };
-
-  const fazerBackup = () => {
-    toast({
-      title: 'Iniciando backup...',
-      description: 'Backup do sistema sendo criado.',
-    });
-    
-    setTimeout(() => {
-      const backupData = {
-        usuarios,
-        pedidos,
-        mensalidades,
-        suportes,
-        configuracoes,
-        timestamp: new Date().toISOString()
-      };
-      
-      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `backup-zdelivery-${new Date().toISOString().split('T')[0]}.json`;
-      a.click();
-      
-      toast({
-        title: 'Backup concluído!',
-        description: 'Backup do sistema salvo com sucesso.',
-      });
-    }, 4000);
-  };
-
   const getStatusBadge = (status: string) => {
     const colors = {
       ativo: 'bg-green-100 text-green-800',
       inativo: 'bg-gray-100 text-gray-800',
       suspenso: 'bg-red-100 text-red-800',
-      preparando: 'bg-yellow-100 text-yellow-800',
+      pendente: 'bg-yellow-100 text-yellow-800',
+      em_preparo: 'bg-blue-100 text-blue-800',
+      pronto: 'bg-purple-100 text-purple-800',
+      saiu_para_entrega: 'bg-orange-100 text-orange-800',
       entregue: 'bg-green-100 text-green-800',
       cancelado: 'bg-red-100 text-red-800',
       pago: 'bg-green-100 text-green-800',
-      pendente: 'bg-yellow-100 text-yellow-800',
       atrasado: 'bg-red-100 text-red-800',
       aberto: 'bg-red-100 text-red-800',
       em_andamento: 'bg-yellow-100 text-yellow-800',
@@ -499,95 +424,133 @@ const DashboardAdmin: React.FC = () => {
     const matchesStatus = filtroStatus === 'todos' || usuario.status === filtroStatus;
     const matchesSearch = usuario.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          usuario.email.toLowerCase().includes(searchTerm.toLowerCase());
-    
     return matchesTipo && matchesStatus && matchesSearch;
   });
 
+  if (!user) return null;
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header userType="admin" userName="Administrador" />
+      <Header userType="admin" userName={user.nome} />
       
-      <div className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard Administrativo</h1>
-          <p className="text-gray-600">Central de controle completa da plataforma Z Delivery</p>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">
+            Dashboard Administrativo
+          </h1>
+          <p className="text-gray-600">
+            Gerencie toda a plataforma ZDelivery
+          </p>
         </div>
 
-        {/* Cards de Estatísticas Expandidos */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Estatísticas Principais */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Usuários</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium text-gray-600">
+                  Total de Clientes
+                </CardTitle>
+                <Users className="w-4 h-4 text-blue-600" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalClientes + stats.totalRestaurantes + stats.totalEntregadores}</div>
-              <p className="text-xs text-green-600">+{stats.crescimentoMensal}% este mês</p>
+              <div className="text-2xl font-bold text-blue-600">
+                {stats.totalClientes}
+              </div>
+              <p className="text-xs text-gray-500">
+                +8% este mês
+              </p>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Receita Total</CardTitle>
-              <DollarSign className="h-4 w-4 text-green-500" />
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium text-gray-600">
+                  Restaurantes
+                </CardTitle>
+                <Store className="w-4 h-4 text-green-600" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">R$ {stats.receitaTotal.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground">Ticket médio: R$ {stats.ticketMedio.toFixed(2)}</p>
+              <div className="text-2xl font-bold text-green-600">
+                {stats.totalRestaurantes}
+              </div>
+              <p className="text-xs text-gray-500">
+                +12% este mês
+              </p>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Suporte Aberto</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-red-500" />
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium text-gray-600">
+                  Entregadores
+                </CardTitle>
+                <Truck className="w-4 h-4 text-orange-600" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">{stats.suportesAbertos}</div>
-              <p className="text-xs text-muted-foreground">Tickets pendentes</p>
+              <div className="text-2xl font-bold text-orange-600">
+                {stats.totalEntregadores}
+              </div>
+              <p className="text-xs text-gray-500">
+                +5% este mês
+              </p>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Avaliação Média</CardTitle>
-              <TrendingUp className="h-4 w-4 text-yellow-500" />
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium text-gray-600">
+                  Pedidos Hoje
+                </CardTitle>
+                <ShoppingCart className="w-4 h-4 text-purple-600" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{stats.mediaAvaliacoes}</div>
-              <p className="text-xs text-muted-foreground">Satisfação geral</p>
+              <div className="text-2xl font-bold text-purple-600">
+                {stats.pedidosHoje}
+              </div>
+              <p className="text-xs text-gray-500">
+                de {stats.totalPedidos} total
+              </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Tabs expandidas */}
-        <Tabs defaultValue="usuarios" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-6">
+        <Tabs defaultValue="usuarios" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="usuarios">Usuários</TabsTrigger>
             <TabsTrigger value="pedidos">Pedidos</TabsTrigger>
-            <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
+            <TabsTrigger value="mensalidades">Mensalidades</TabsTrigger>
             <TabsTrigger value="suporte">Suporte</TabsTrigger>
-            <TabsTrigger value="configuracoes">Config</TabsTrigger>
-            <TabsTrigger value="relatorios">Relatórios</TabsTrigger>
+            <TabsTrigger value="configuracoes">Configurações</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="usuarios" className="space-y-4">
+          {/* Tab Usuários */}
+          <TabsContent value="usuarios">
             <Card>
               <CardHeader>
-                <CardTitle>Gerenciar Usuários</CardTitle>
+                <CardTitle>Gerenciamento de Usuários</CardTitle>
                 <CardDescription>
                   Visualize e gerencie todos os usuários da plataforma
                 </CardDescription>
-                <div className="flex flex-col md:flex-row gap-4">
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col md:flex-row gap-4 mb-6">
                   <Input
-                    placeholder="Buscar por nome ou email..."
+                    placeholder="Buscar usuários..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="max-w-sm"
+                    className="md:w-80"
                   />
                   <Select value={filtroTipo} onValueChange={setFiltroTipo}>
-                    <SelectTrigger className="max-w-sm">
-                      <SelectValue placeholder="Filtrar por tipo" />
+                    <SelectTrigger className="md:w-48">
+                      <SelectValue placeholder="Tipo" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="todos">Todos os tipos</SelectItem>
@@ -597,19 +560,18 @@ const DashboardAdmin: React.FC = () => {
                     </SelectContent>
                   </Select>
                   <Select value={filtroStatus} onValueChange={setFiltroStatus}>
-                    <SelectTrigger className="max-w-sm">
-                      <SelectValue placeholder="Filtrar por status" />
+                    <SelectTrigger className="md:w-48">
+                      <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="todos">Todos os status</SelectItem>
-                      <SelectItem value="ativo">Ativos</SelectItem>
-                      <SelectItem value="inativo">Inativos</SelectItem>
-                      <SelectItem value="suspenso">Suspensos</SelectItem>
+                      <SelectItem value="ativo">Ativo</SelectItem>
+                      <SelectItem value="inativo">Inativo</SelectItem>
+                      <SelectItem value="suspenso">Suspenso</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-              </CardHeader>
-              <CardContent>
+
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -617,50 +579,49 @@ const DashboardAdmin: React.FC = () => {
                       <TableHead>Email</TableHead>
                       <TableHead>Tipo</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Cadastro</TableHead>
-                      <TableHead>Info Extra</TableHead>
+                      <TableHead>Último Acesso</TableHead>
                       <TableHead>Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {usuariosFiltrados.map((usuario) => (
+                    {usuariosFiltrados.map(usuario => (
                       <TableRow key={usuario.id}>
                         <TableCell className="font-medium">{usuario.nome}</TableCell>
                         <TableCell>{usuario.email}</TableCell>
-                        <TableCell className="capitalize">{usuario.tipo}</TableCell>
-                        <TableCell>{getStatusBadge(usuario.status)}</TableCell>
-                        <TableCell>{usuario.dataCadastro}</TableCell>
                         <TableCell>
-                          {usuario.tipo === 'cliente' && (
-                            <span className="text-sm text-gray-600">
-                              {usuario.totalPedidos} pedidos | R$ {usuario.totalGasto?.toFixed(2)}
-                            </span>
-                          )}
+                          <Badge variant="outline">{usuario.tipo}</Badge>
                         </TableCell>
+                        <TableCell>{getStatusBadge(usuario.status)}</TableCell>
+                        <TableCell>{usuario.ultimoAcesso}</TableCell>
                         <TableCell>
                           <div className="flex space-x-2">
                             <Button
-                              variant="ghost"
                               size="sm"
+                              variant="outline"
                               onClick={() => {
                                 setSelectedUser(usuario);
                                 setShowUserDialog(true);
                               }}
                             >
-                              <Eye className="h-4 w-4" />
+                              <Eye className="w-4 h-4" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => alterarStatusUsuario(usuario.id, 
-                                usuario.status === 'ativo' ? 'suspenso' : 'ativo'
-                              )}
-                            >
-                              {usuario.status === 'ativo' ? 
-                                <Ban className="h-4 w-4 text-red-500" /> : 
-                                <CheckCircle className="h-4 w-4 text-green-500" />
-                              }
-                            </Button>
+                            {usuario.status === 'ativo' ? (
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => alterarStatusUsuario(usuario.id, 'suspenso')}
+                              >
+                                <Ban className="w-4 h-4" />
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                className="bg-green-600 hover:bg-green-700"
+                                onClick={() => alterarStatusUsuario(usuario.id, 'ativo')}
+                              >
+                                <CheckCircle className="w-4 h-4" />
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -671,10 +632,11 @@ const DashboardAdmin: React.FC = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="pedidos" className="space-y-4">
+          {/* Tab Pedidos */}
+          <TabsContent value="pedidos">
             <Card>
               <CardHeader>
-                <CardTitle>Monitorar Pedidos</CardTitle>
+                <CardTitle>Monitoramento de Pedidos</CardTitle>
                 <CardDescription>
                   Acompanhe todos os pedidos da plataforma em tempo real
                 </CardDescription>
@@ -689,12 +651,12 @@ const DashboardAdmin: React.FC = () => {
                       <TableHead>Entregador</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Valor</TableHead>
-                      <TableHead>Data/Hora</TableHead>
+                      <TableHead>Data</TableHead>
                       <TableHead>Pagamento</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {pedidos.map((pedido) => (
+                    {pedidos.map(pedido => (
                       <TableRow key={pedido.id}>
                         <TableCell className="font-medium">#{pedido.id}</TableCell>
                         <TableCell>{pedido.cliente}</TableCell>
@@ -703,7 +665,9 @@ const DashboardAdmin: React.FC = () => {
                         <TableCell>{getStatusBadge(pedido.status)}</TableCell>
                         <TableCell>R$ {pedido.valor.toFixed(2)}</TableCell>
                         <TableCell>{pedido.data} {pedido.hora}</TableCell>
-                        <TableCell className="capitalize">{pedido.metodoPagamento}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{pedido.metodoPagamento}</Badge>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -712,59 +676,13 @@ const DashboardAdmin: React.FC = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="financeiro" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Receita Mensalidades</CardTitle>
-                  <DollarSign className="h-4 w-4 text-green-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-green-600">
-                    R$ {stats.receitaMensalidades.toFixed(2)}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Mensalidades pagas este mês
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Pendentes</CardTitle>
-                  <Calendar className="h-4 w-4 text-yellow-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-yellow-600">
-                    {mensalidades.filter(m => m.status === 'pendente').length}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Mensalidades a vencer
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Atrasadas</CardTitle>
-                  <AlertTriangle className="h-4 w-4 text-red-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-red-600">
-                    {mensalidades.filter(m => m.status === 'atrasado').length}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Mensalidades em atraso
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
+          {/* Tab Mensalidades */}
+          <TabsContent value="mensalidades">
             <Card>
               <CardHeader>
-                <CardTitle>Mensalidades dos Restaurantes</CardTitle>
+                <CardTitle>Controle de Mensalidades</CardTitle>
                 <CardDescription>
-                  Gerencie os pagamentos das mensalidades dos restaurantes parceiros
+                  Gerencie os pagamentos dos planos dos restaurantes
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -776,29 +694,27 @@ const DashboardAdmin: React.FC = () => {
                       <TableHead>Valor</TableHead>
                       <TableHead>Vencimento</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Data Pagamento</TableHead>
                       <TableHead>Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {mensalidades.map((mensalidade) => (
+                    {mensalidades.map(mensalidade => (
                       <TableRow key={mensalidade.id}>
                         <TableCell className="font-medium">{mensalidade.restaurante}</TableCell>
-                        <TableCell>{getPlanoNome(mensalidade.plano)}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{getPlanoNome(mensalidade.plano)}</Badge>
+                        </TableCell>
                         <TableCell>R$ {mensalidade.valor.toFixed(2)}</TableCell>
                         <TableCell>{mensalidade.vencimento}</TableCell>
                         <TableCell>{getStatusBadge(mensalidade.status)}</TableCell>
-                        <TableCell>{mensalidade.dataPagamento || '-'}</TableCell>
                         <TableCell>
                           {mensalidade.status !== 'pago' && (
                             <Button
-                              variant="outline"
                               size="sm"
+                              className="bg-green-600 hover:bg-green-700"
                               onClick={() => marcarMensalidadePaga(mensalidade.id)}
-                              className="text-green-600 hover:text-green-700"
                             >
-                              <CheckCircle className="h-4 w-4 mr-1" />
-                              Marcar como Pago
+                              Confirmar Pagamento
                             </Button>
                           )}
                         </TableCell>
@@ -810,12 +726,13 @@ const DashboardAdmin: React.FC = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="suporte" className="space-y-4">
+          {/* Tab Suporte */}
+          <TabsContent value="suporte">
             <Card>
               <CardHeader>
                 <CardTitle>Central de Suporte</CardTitle>
                 <CardDescription>
-                  Gerencie todos os tickets de suporte da plataforma
+                  Gerencie tickets de suporte dos usuários
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -833,36 +750,31 @@ const DashboardAdmin: React.FC = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {suportes.map((suporte) => (
+                    {suportes.map(suporte => (
                       <TableRow key={suporte.id}>
-                        <TableCell className="font-medium">#{suporte.id}</TableCell>
+                        <TableCell>#{suporte.id}</TableCell>
                         <TableCell>{suporte.usuario}</TableCell>
-                        <TableCell className="capitalize">{suporte.tipo}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{suporte.tipo}</Badge>
+                        </TableCell>
                         <TableCell>{suporte.assunto}</TableCell>
                         <TableCell>{getStatusBadge(suporte.status)}</TableCell>
                         <TableCell>{getPrioridadeBadge(suporte.prioridade)}</TableCell>
                         <TableCell>{suporte.data}</TableCell>
                         <TableCell>
-                          <div className="flex space-x-1">
-                            {suporte.status !== 'resolvido' && (
-                              <>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => alterarStatusSuporte(suporte.id, 'em_andamento')}
-                                >
-                                  <Clock className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => alterarStatusSuporte(suporte.id, 'resolvido')}
-                                >
-                                  <CheckCircle className="h-4 w-4 text-green-500" />
-                                </Button>
-                              </>
-                            )}
-                          </div>
+                          <Select
+                            value={suporte.status}
+                            onValueChange={(value) => alterarStatusSuporte(suporte.id, value as any)}
+                          >
+                            <SelectTrigger className="w-32">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="aberto">Aberto</SelectItem>
+                              <SelectItem value="em_andamento">Em Andamento</SelectItem>
+                              <SelectItem value="resolvido">Resolvido</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -872,35 +784,32 @@ const DashboardAdmin: React.FC = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="configuracoes" className="space-y-4">
+          {/* Tab Configurações */}
+          <TabsContent value="configuracoes">
             <Card>
               <CardHeader>
                 <CardTitle>Configurações do Sistema</CardTitle>
                 <CardDescription>
-                  Gerencie as configurações globais da plataforma
+                  Configure parâmetros globais da plataforma
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
-                  {['financeiro', 'operacional', 'contato'].map(categoria => (
-                    <div key={categoria}>
-                      <h3 className="text-lg font-semibold mb-3 capitalize">{categoria}</h3>
-                      <div className="space-y-3">
-                        {configuracoes
-                          .filter(config => config.categoria === categoria)
-                          .map(config => (
-                            <div key={config.id} className="flex items-center space-x-4">
-                              <div className="flex-1">
-                                <label className="text-sm font-medium">{config.descricao}</label>
-                                <p className="text-xs text-gray-500">{config.chave}</p>
-                              </div>
-                              <Input
-                                value={config.valor}
-                                onChange={(e) => atualizarConfiguracao(config.id, e.target.value)}
-                                className="w-48"
-                              />
-                            </div>
-                          ))}
+                  {configuracoes.map(config => (
+                    <div key={config.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
+                        <h4 className="font-medium">{config.descricao}</h4>
+                        <p className="text-sm text-gray-500">Categoria: {config.categoria}</p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Input
+                          value={config.valor}
+                          onChange={(e) => atualizarConfiguracao(config.id, e.target.value)}
+                          className="w-32"
+                        />
+                        <Button size="sm" variant="outline">
+                          Salvar
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -908,192 +817,66 @@ const DashboardAdmin: React.FC = () => {
               </CardContent>
             </Card>
           </TabsContent>
-
-          <TabsContent value="relatorios" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Receita Total</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-green-600">
-                    R$ {stats.receitaTotal.toFixed(2)}
-                  </div>
-                  <p className="text-sm text-gray-600 mt-2">
-                    Total de receita gerada na plataforma
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Resumo de Usuários</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span>Clientes:</span>
-                      <span className="font-semibold">{stats.totalClientes}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Restaurantes:</span>
-                      <span className="font-semibold">{stats.totalRestaurantes}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Entregadores:</span>
-                      <span className="font-semibold">{stats.totalEntregadores}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Métricas de Performance</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span>Pedidos hoje:</span>
-                      <span className="font-semibold">{stats.pedidosHoje}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Ticket médio:</span>
-                      <span className="font-semibold">R$ {stats.ticketMedio.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Avaliação média:</span>
-                      <span className="font-semibold">{stats.mediaAvaliacoes}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Crescimento:</span>
-                      <span className="font-semibold text-green-600">+{stats.crescimentoMensal}%</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Status do Sistema</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span>API Status:</span>
-                      <Badge className="bg-green-100 text-green-800">Online</Badge>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>Database:</span>
-                      <Badge className="bg-green-100 text-green-800">Conectado</Badge>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>Pagamentos:</span>
-                      <Badge className="bg-green-100 text-green-800">Operacional</Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Ações Rápidas</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <Button 
-                        variant="outline" 
-                        className="w-full justify-start"
-                        onClick={exportarRelatorio}
-                      >
-                        <FileText className="h-4 w-4 mr-2" />
-                        Exportar Relatório
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        className="w-full justify-start"
-                        onClick={enviarNewsletter}
-                      >
-                        <Mail className="h-4 w-4 mr-2" />
-                        Enviar Newsletter
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        className="w-full justify-start"
-                        onClick={fazerBackup}
-                      >
-                        <Settings className="h-4 w-4 mr-2" />
-                        Backup Sistema
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-            </div>
-          </TabsContent>
         </Tabs>
-      </div>
 
-      {/* Dialog expandido para detalhes do usuário */}
-      <Dialog open={showUserDialog} onOpenChange={setShowUserDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Detalhes do Usuário</DialogTitle>
-            <DialogDescription>
-              Informações completas do usuário selecionado
-            </DialogDescription>
-          </DialogHeader>
-          {selectedUser && (
-            <div className="space-y-4">
-              <div>
-                <label className="font-semibold">Nome:</label>
-                <p>{selectedUser.nome}</p>
-              </div>
-              <div>
-                <label className="font-semibold">Email:</label>
-                <p>{selectedUser.email}</p>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Phone className="h-4 w-4 text-gray-500" />
-                <span>{selectedUser.telefone}</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <MapPin className="h-4 w-4 text-gray-500" />
-                <span className="text-sm">{selectedUser.endereco}</span>
-              </div>
-              <div>
-                <label className="font-semibold">Tipo:</label>
-                <p className="capitalize">{selectedUser.tipo}</p>
-              </div>
-              <div>
-                <label className="font-semibold">Status:</label>
-                <p>{getStatusBadge(selectedUser.status)}</p>
-              </div>
-              <div>
-                <label className="font-semibold">Data de Cadastro:</label>
-                <p>{selectedUser.dataCadastro}</p>
-              </div>
-              <div>
-                <label className="font-semibold">Último Acesso:</label>
-                <p>{selectedUser.ultimoAcesso}</p>
-              </div>
-              {selectedUser.tipo === 'cliente' && (
-                <div className="border-t pt-4">
+        {/* Dialog de Detalhes do Usuário */}
+        <Dialog open={showUserDialog} onOpenChange={setShowUserDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Detalhes do Usuário</DialogTitle>
+              <DialogDescription>
+                Informações completas do usuário selecionado
+              </DialogDescription>
+            </DialogHeader>
+            {selectedUser && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <strong>Nome:</strong>
+                    <p>{selectedUser.nome}</p>
+                  </div>
+                  <div>
+                    <strong>Email:</strong>
+                    <p>{selectedUser.email}</p>
+                  </div>
+                  <div>
+                    <strong>Telefone:</strong>
+                    <p>{selectedUser.telefone}</p>
+                  </div>
+                  <div>
+                    <strong>Tipo:</strong>
+                    <p>{selectedUser.tipo}</p>
+                  </div>
+                  <div>
+                    <strong>Status:</strong>
+                    <p>{selectedUser.status}</p>
+                  </div>
+                  <div>
+                    <strong>Data de Cadastro:</strong>
+                    <p>{selectedUser.dataCadastro}</p>
+                  </div>
+                </div>
+                <div>
+                  <strong>Endereço:</strong>
+                  <p>{selectedUser.endereco}</p>
+                </div>
+                {selectedUser.tipo === 'cliente' && (
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="font-semibold">Total de Pedidos:</label>
+                      <strong>Total de Pedidos:</strong>
                       <p>{selectedUser.totalPedidos}</p>
                     </div>
                     <div>
-                      <label className="font-semibold">Total Gasto:</label>
+                      <strong>Total Gasto:</strong>
                       <p>R$ {selectedUser.totalGasto?.toFixed(2)}</p>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+                )}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+      </main>
     </div>
   );
 };

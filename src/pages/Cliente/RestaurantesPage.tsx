@@ -18,9 +18,32 @@ const RestaurantesPage: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Verificar se é usuário de teste primeiro
+    const testUser = localStorage.getItem('zdelivery_test_user');
+    if (testUser) {
+      try {
+        const { profile } = JSON.parse(testUser);
+        if (profile.tipo !== 'cliente') {
+          navigate('/login');
+        } else {
+          setUser(profile);
+        }
+        return;
+      } catch (error) {
+        console.error('Error loading test user:', error);
+        localStorage.removeItem('zdelivery_test_user');
+      }
+    }
+
+    // Verificar usuário normal
     const userData = localStorage.getItem('zdelivery_user');
     if (userData) {
-      setUser(JSON.parse(userData));
+      const parsedUser = JSON.parse(userData);
+      if (parsedUser.tipo !== 'cliente') {
+        navigate('/login');
+      } else {
+        setUser(parsedUser);
+      }
     } else {
       navigate('/login');
     }

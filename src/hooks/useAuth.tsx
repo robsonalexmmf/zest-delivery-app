@@ -29,7 +29,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
+    // Verificar se há usuário de teste salvo primeiro
+    const savedTestUser = localStorage.getItem('zdelivery_test_user');
+    if (savedTestUser) {
+      try {
+        const { user: mockUser, profile: mockProfile } = JSON.parse(savedTestUser);
+        setUser(mockUser);
+        setProfile(mockProfile);
+        setLoading(false);
+        return;
+      } catch (error) {
+        console.error('Error loading test user:', error);
+        localStorage.removeItem('zdelivery_test_user');
+      }
+    }
+
+    // Get initial session para usuários normais
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -221,20 +236,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await fetchProfile(user.id);
   };
 
-  // Verificar se há usuário de teste salvo no localStorage ao inicializar
-  useEffect(() => {
-    const savedTestUser = localStorage.getItem('zdelivery_test_user');
-    if (savedTestUser && !user) {
-      try {
-        const { user: mockUser, profile: mockProfile } = JSON.parse(savedTestUser);
-        setUser(mockUser);
-        setProfile(mockProfile);
-      } catch (error) {
-        console.error('Error loading test user:', error);
-        localStorage.removeItem('zdelivery_test_user');
-      }
-    }
-  }, []);
 
   const value = {
     user,

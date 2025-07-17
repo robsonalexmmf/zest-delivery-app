@@ -64,16 +64,21 @@ const DashboardRestaurante: React.FC = () => {
 
   useEffect(() => {
     // Verificar se é usuário de teste primeiro
-    const testUser = localStorage.getItem('testUser');
+    const testUser = localStorage.getItem('zdelivery_test_user');
     if (testUser) {
-      const parsedTestUser = JSON.parse(testUser);
-      if (parsedTestUser.tipo !== 'restaurante') {
-        navigate('/login');
-      } else {
-        setUser(parsedTestUser);
-        carregarConfiguracoes();
+      try {
+        const { profile } = JSON.parse(testUser);
+        if (profile.tipo !== 'restaurante') {
+          navigate('/login');
+        } else {
+          setUser(profile);
+          carregarConfiguracoes();
+        }
+        return;
+      } catch (error) {
+        console.error('Error loading test user:', error);
+        localStorage.removeItem('zdelivery_test_user');
       }
-      return;
     }
 
     // Verificar usuário normal
