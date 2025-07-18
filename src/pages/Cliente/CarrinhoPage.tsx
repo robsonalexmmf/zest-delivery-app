@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Layout/Header';
 import CarrinhoItem from '@/components/Cliente/CarrinhoItem';
 import PagamentoPix from '@/components/Pagamento/PagamentoPix';
+import PagamentoCartao from '@/components/Pagamento/PagamentoCartao';
+import PagamentoDinheiro from '@/components/Pagamento/PagamentoDinheiro';
 import AplicadorCupom from '@/components/Cliente/AplicadorCupom';
 import GerenciadorEnderecos from '@/components/Cliente/GerenciadorEnderecos';
 import { Button } from '@/components/ui/button';
@@ -44,6 +46,8 @@ const CarrinhoPage: React.FC = () => {
   const [observacoes, setObservacoes] = useState('');
   const [cupomAplicado, setCupomAplicado] = useState<CupomAplicado | null>(null);
   const [showPixModal, setShowPixModal] = useState(false);
+  const [showCartaoModal, setShowCartaoModal] = useState(false);
+  const [showDinheiroModal, setShowDinheiroModal] = useState(false);
   const [pedidoId, setPedidoId] = useState('');
   const navigate = useNavigate();
 
@@ -169,40 +173,13 @@ const CarrinhoPage: React.FC = () => {
     const novoIdPedido = `#${Date.now().toString().slice(-6)}`;
     setPedidoId(novoIdPedido);
 
-    // Se for PIX, abrir modal de pagamento
+    // Abrir modal específico para cada forma de pagamento
     if (pagamento === 'pix') {
       setShowPixModal(true);
-    } else {
-      // Simular outros métodos de pagamento
-      if (pagamento === 'cartao') {
-        // Simular tela de cartão de crédito
-        const dadosCartao = prompt('Número do cartão (simulação):\nDigite qualquer número para continuar');
-        if (dadosCartao) {
-          const cvv = prompt('CVV (simulação):');
-          if (cvv) {
-            toast({
-              title: 'Processando pagamento...',
-              description: 'Aguarde enquanto processamos seu cartão.',
-            });
-            setTimeout(() => confirmarPedido(novoIdPedido), 3000);
-          }
-        }
-      } else if (pagamento === 'dinheiro') {
-        // Para dinheiro na entrega, perguntar sobre troco
-        const precisaTroco = confirm('Vai precisar de troco?');
-        if (precisaTroco) {
-          const valorTroco = prompt('Para quanto você precisa de troco?');
-          if (valorTroco) {
-            toast({
-              title: 'Pedido confirmado!',
-              description: `Entregador levará troco para R$ ${valorTroco}`,
-            });
-          }
-        }
-        confirmarPedido(novoIdPedido);
-      } else {
-        confirmarPedido(novoIdPedido);
-      }
+    } else if (pagamento === 'cartao') {
+      setShowCartaoModal(true);
+    } else if (pagamento === 'dinheiro') {
+      setShowDinheiroModal(true);
     }
   };
 
@@ -462,6 +439,22 @@ const CarrinhoPage: React.FC = () => {
       <PagamentoPix
         isOpen={showPixModal}
         onClose={() => setShowPixModal(false)}
+        valor={totalFinal}
+        pedidoId={pedidoId}
+        onPagamentoConfirmado={() => confirmarPedido(pedidoId)}
+      />
+
+      <PagamentoCartao
+        isOpen={showCartaoModal}
+        onClose={() => setShowCartaoModal(false)}
+        valor={totalFinal}
+        pedidoId={pedidoId}
+        onPagamentoConfirmado={() => confirmarPedido(pedidoId)}
+      />
+
+      <PagamentoDinheiro
+        isOpen={showDinheiroModal}
+        onClose={() => setShowDinheiroModal(false)}
         valor={totalFinal}
         pedidoId={pedidoId}
         onPagamentoConfirmado={() => confirmarPedido(pedidoId)}
