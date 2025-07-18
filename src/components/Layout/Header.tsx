@@ -52,7 +52,7 @@ const Header: React.FC<HeaderProps> = ({ userType, userName, cartCount = 0 }) =>
         ];
       case 'admin':
         return [
-          { label: 'Dashboard', path: '/admin/dashboard', icon: Settings },
+          { label: 'Dashboard', path: '/dashboard-admin', icon: Settings },
         ];
       default:
         return [];

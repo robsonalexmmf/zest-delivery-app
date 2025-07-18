@@ -48,13 +48,36 @@ const CarrinhoPage: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const userData = localStorage.getItem('zdelivery_user');
-    if (userData) {
-      const user = JSON.parse(userData);
-      setUser(user);
-      carregarEnderecoSalvo();
+    // Verificar se é usuário de teste primeiro
+    const testUser = localStorage.getItem('zdelivery_test_user');
+    if (testUser) {
+      try {
+        const { profile } = JSON.parse(testUser);
+        if (profile.tipo !== 'cliente') {
+          navigate('/login');
+        } else {
+          setUser(profile);
+          carregarEnderecoSalvo();
+        }
+      } catch (error) {
+        console.error('Error loading test user:', error);
+        localStorage.removeItem('zdelivery_test_user');
+        navigate('/login');
+      }
     } else {
-      navigate('/login');
+      // Verificar usuário normal
+      const userData = localStorage.getItem('zdelivery_user');
+      if (userData) {
+        const user = JSON.parse(userData);
+        if (user.tipo !== 'cliente') {
+          navigate('/login');
+        } else {
+          setUser(user);
+          carregarEnderecoSalvo();
+        }
+      } else {
+        navigate('/login');
+      }
     }
 
     // Carregar carrinho
