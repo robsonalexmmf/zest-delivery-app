@@ -45,8 +45,7 @@ class PedidosService {
     if (pedidosSalvos) {
       this.pedidos = JSON.parse(pedidosSalvos);
     } else {
-      // Dados mockados iniciais
-      // Não criar pedidos mockados automaticamente para evitar confusão
+      // Não criar pedidos mockados automaticamente
       this.pedidos = [];
       this.salvarPedidos();
     }

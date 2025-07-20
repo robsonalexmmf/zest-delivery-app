@@ -27,6 +27,7 @@ import RelatoriosPage from "./pages/Restaurante/RelatoriosPage";
 import DashboardEntregador from "./pages/Entregador/DashboardEntregador";
 import EntregasDisponiveisPage from "./pages/Entregador/EntregasDisponiveisPage";
 import ConfiguracaoEntregadorPage from "./pages/Entregador/ConfiguracaoEntregadorPage";
+import StatusPedidosPage from "./pages/Entregador/StatusPedidosPage";
 
 // Páginas do Administrador
 import DashboardAdmin from "./pages/Admin/DashboardAdmin";
@@ -62,6 +63,7 @@ const App = () => (
             <Route path="/dashboard-entregador" element={<DashboardEntregador />} />
             <Route path="/entregas-disponiveis" element={<EntregasDisponiveisPage />} />
             <Route path="/configuracao-entregador" element={<ConfiguracaoEntregadorPage />} />
+            <Route path="/status-pedidos" element={<StatusPedidosPage />} />
             
             {/* Rotas do Administrador */}
             <Route path="/dashboard-admin" element={<DashboardAdmin />} />

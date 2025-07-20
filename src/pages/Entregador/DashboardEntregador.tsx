@@ -140,6 +140,14 @@ const DashboardEntregador: React.FC = () => {
             <div className="flex items-center space-x-4">
               <Button 
                 variant="outline" 
+                onClick={() => navigate('/status-pedidos')}
+                className="flex items-center mr-2"
+              >
+                <Clock className="w-4 h-4 mr-2" />
+                Ver Status
+              </Button>
+              <Button 
+                variant="outline" 
                 onClick={() => navigate('/configuracao-entregador')}
                 className="flex items-center"
               >
