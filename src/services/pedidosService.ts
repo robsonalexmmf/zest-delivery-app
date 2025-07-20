@@ -42,8 +42,11 @@ class PedidosService {
 
   private carregarPedidos() {
     const pedidosSalvos = localStorage.getItem('zdelivery_pedidos');
+    console.log('Pedidos salvos no localStorage:', pedidosSalvos);
+    
     if (pedidosSalvos) {
       this.pedidos = JSON.parse(pedidosSalvos);
+      console.log('Pedidos carregados:', this.pedidos);
     } else {
       // Não criar pedidos mockados automaticamente
       this.pedidos = [];
@@ -112,6 +115,7 @@ class PedidosService {
       ...pedido,
       id: `PED${Date.now()}`
     };
+    console.log('Criando novo pedido:', novoPedido);
     this.pedidos.push(novoPedido);
     this.salvarPedidos();
     return novoPedido.id;

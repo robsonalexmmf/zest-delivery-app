@@ -68,7 +68,11 @@ const PedidosRestaurantePage: React.FC = () => {
     if (!user) return;
 
     const unsubscribe = pedidosService.subscribe((todosPedidos) => {
+      console.log('Todos os pedidos:', todosPedidos);
+      console.log('Nome do usuário restaurante:', user.nome);
+      
       const pedidosRestaurante = pedidosService.getPedidosPorRestaurante(user.nome);
+      console.log('Pedidos filtrados para o restaurante:', pedidosRestaurante);
       
       // Detectar novos pedidos pendentes
       const pedidosPendentes = pedidosRestaurante.filter(p => p.status === 'pendente');
