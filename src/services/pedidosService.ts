@@ -46,56 +46,8 @@ class PedidosService {
       this.pedidos = JSON.parse(pedidosSalvos);
     } else {
       // Dados mockados iniciais
-      this.pedidos = [
-        {
-          id: 'PED001',
-          cliente: {
-            nome: 'João Silva',
-            endereco: 'Rua A, 123 - Centro',
-            telefone: '(11) 99999-9999'
-          },
-          restaurante: {
-            nome: 'Pizza Deliciosa',
-            endereco: 'Rua das Flores, 123',
-            telefone: '(11) 3333-3333'
-          },
-          itens: [
-            { nome: 'Pizza Margherita Grande', quantidade: 1, preco: 35.90 },
-            { nome: 'Coca-Cola 350ml', quantidade: 2, preco: 5.50 }
-          ],
-          total: 46.90,
-          status: 'pendente',
-          data: new Date().toLocaleDateString(),
-          hora: new Date().toLocaleTimeString(),
-          metodoPagamento: 'pix',
-          valorEntrega: 8.50,
-          tempoEstimado: '25min'
-        },
-        {
-          id: 'PED002',
-          cliente: {
-            nome: 'Maria Santos',
-            endereco: 'Av. B, 456 - Jardim',
-            telefone: '(11) 88888-8888'
-          },
-          restaurante: {
-            nome: 'Burger House',
-            endereco: 'Av. Central, 789',
-            telefone: '(11) 4444-4444'
-          },
-          itens: [
-            { nome: 'X-Bacon', quantidade: 1, preco: 22.50 },
-            { nome: 'Batata Frita', quantidade: 1, preco: 12.90 }
-          ],
-          total: 35.40,
-          status: 'em_preparo',
-          data: new Date().toLocaleDateString(),
-          hora: new Date().toLocaleTimeString(),
-          metodoPagamento: 'cartao',
-          valorEntrega: 6.50,
-          tempoEstimado: '20min'
-        }
-      ];
+      // Não criar pedidos mockados automaticamente para evitar confusão
+      this.pedidos = [];
       this.salvarPedidos();
     }
   }

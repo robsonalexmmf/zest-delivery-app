@@ -240,7 +240,7 @@ const DashboardRestaurante: React.FC = () => {
                 onClick={() => navigate('/pedidos-restaurante')}
               >
                 <Bell className="w-4 h-4 mr-2" />
-                {estatisticas.pedidos_pendentes} Pedidos Pendentes
+                Ver Pedidos
               </Button>
               
               <Dialog open={showConfigDialog} onOpenChange={setShowConfigDialog}>
