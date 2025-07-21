@@ -118,7 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       'restaurante@test.com': {
         id: '22222222-2222-2222-2222-222222222222',
-        nome: 'Pizza Deliciosa',
+        nome: 'Pizzaria do Mario',
         email: 'restaurante@test.com',
         tipo: 'restaurante' as const,
         telefone: '(11) 99999-2222',
