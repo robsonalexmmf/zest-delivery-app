@@ -93,16 +93,20 @@ class PedidosService {
   }
 
   atualizarStatusPedido(pedidoId: string, novoStatus: Pedido['status'], entregador?: { nome: string; telefone: string }) {
+    console.log(`Atualizando pedido ${pedidoId} para status ${novoStatus}`);
     const pedidoIndex = this.pedidos.findIndex(p => p.id === pedidoId);
     if (pedidoIndex !== -1) {
+      const pedidoAnterior = {...this.pedidos[pedidoIndex]};
       this.pedidos[pedidoIndex] = {
         ...this.pedidos[pedidoIndex],
         status: novoStatus,
         ...(entregador && { entregador })
       };
+      console.log(`Pedido atualizado de ${pedidoAnterior.status} para ${novoStatus}`);
       this.salvarPedidos();
       return true;
     }
+    console.log(`Pedido ${pedidoId} não encontrado`);
     return false;
   }
 

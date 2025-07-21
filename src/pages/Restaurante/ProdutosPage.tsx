@@ -58,68 +58,173 @@ const ProdutosPage: React.FC = () => {
   }, [navigate]);
 
   const carregarProdutos = () => {
-    // Primeiro tentar carregar do localStorage
-    const produtosSalvos = localStorage.getItem('restaurant_products');
+    if (!user) return;
+    
+    // Primeiro tentar carregar do localStorage específico do restaurante
+    const produtosSalvos = localStorage.getItem(`restaurant_products_${user.nome}`);
     if (produtosSalvos) {
       const produtos = JSON.parse(produtosSalvos);
       setProdutos(produtos);
       // Sincronizar com dados globais
       const produtosGlobais = JSON.parse(localStorage.getItem('zdelivery_produtos_globais') || '{}');
-      produtosGlobais[user?.nome || 'Restaurante'] = produtos;
+      produtosGlobais[user.nome] = produtos;
       localStorage.setItem('zdelivery_produtos_globais', JSON.stringify(produtosGlobais));
       return;
     }
 
-    // Produtos mockados com adicionais
-    const produtosMockados = [
-      {
-        id: '1',
-        nome: 'Pizza Margherita',
-        descricao: 'Molho de tomate, mussarela, manjericão e orégano',
-        preco: 35.90,
-        categoria: 'Pizzas',
-        disponivel: true,
-        imagem: '/placeholder.svg',
-        adicionais: [
-          {
-            id: 'borda',
-            nome: 'Borda Recheada',
-            tipo: 'unico',
-            obrigatorio: false,
-            opcoes: [
-              { id: 'catupiry', nome: 'Catupiry', preco: 8.00 },
-              { id: 'cheddar', nome: 'Cheddar', preco: 6.00 }
-            ]
-          }
-        ]
-      },
-      {
-        id: '2',
-        nome: 'Pizza Calabresa',
-        descricao: 'Molho de tomate, mussarela, calabresa e cebola',
-        preco: 38.90,
-        categoria: 'Pizzas',
-        disponivel: true,
-        imagem: '/placeholder.svg',
-        adicionais: []
-      },
-      {
-        id: '3',
-        nome: 'Coca-Cola 350ml',
-        descricao: 'Refrigerante gelado',
-        preco: 5.50,
-        categoria: 'Bebidas',
-        disponivel: false,
-        imagem: '/placeholder.svg',
-        adicionais: []
-      }
-    ];
+    // Verificar dados globais para este restaurante
+    const produtosGlobaisExistentes = JSON.parse(localStorage.getItem('zdelivery_produtos_globais') || '{}');
+    if (produtosGlobaisExistentes[user.nome]) {
+      const produtos = produtosGlobaisExistentes[user.nome];
+      setProdutos(produtos);
+      localStorage.setItem(`restaurant_products_${user.nome}`, JSON.stringify(produtos));
+      return;
+    }
+
+    // Apenas criar produtos mockados se for a Pizzaria do Mario
+    let produtosMockados = [];
+    if (user.nome === 'Pizzaria do Mario') {
+      produtosMockados = [
+        {
+          id: '1',
+          nome: 'Pizza Margherita',
+          descricao: 'Molho de tomate, mussarela, manjericão e orégano',
+          preco: 42.90,
+          categoria: 'Pizzas',
+          disponivel: true,
+          imagem: '/placeholder.svg',
+          adicionais: [
+            {
+              id: 'borda',
+              nome: 'Borda Recheada',
+              tipo: 'unico',
+              obrigatorio: false,
+              opcoes: [
+                { id: 'catupiry', nome: 'Catupiry', preco: 8.00 },
+                { id: 'cheddar', nome: 'Cheddar', preco: 6.00 }
+              ]
+            }
+          ]
+        },
+        {
+          id: '2',
+          nome: 'Pizza Calabresa',
+          descricao: 'Molho de tomate, mussarela, calabresa e cebola',
+          preco: 45.90,
+          categoria: 'Pizzas',
+          disponivel: true,
+          imagem: '/placeholder.svg',
+          adicionais: []
+        },
+        {
+          id: '3',
+          nome: 'Pizza Pepperoni',
+          descricao: 'Molho de tomate, mussarela e pepperoni',
+          preco: 46.90,
+          categoria: 'Pizzas',
+          disponivel: true,
+          imagem: '/placeholder.svg',
+          adicionais: []
+        },
+        {
+          id: '4',
+          nome: 'Pizza Quatro Queijos',
+          descricao: 'Molho de tomate, mussarela, gorgonzola, parmesão e catupiry',
+          preco: 48.90,
+          categoria: 'Pizzas',
+          disponivel: true,
+          imagem: '/placeholder.svg',
+          adicionais: []
+        },
+        {
+          id: '5',
+          nome: 'Pizza Napolitana',
+          descricao: 'Molho de tomate, mussarela, tomate e manjericão',
+          preco: 44.90,
+          categoria: 'Pizzas',
+          disponivel: true,
+          imagem: '/placeholder.svg',
+          adicionais: []
+        },
+        {
+          id: '6',
+          nome: 'Pizza Bacon & Champignon',
+          descricao: 'Molho de tomate, mussarela, bacon e champignon',
+          preco: 49.90,
+          categoria: 'Pizzas',
+          disponivel: true,
+          imagem: '/placeholder.svg',
+          adicionais: []
+        },
+        {
+          id: '7',
+          nome: 'Pizza Camarão Alho & Óleo',
+          descricao: 'Molho de azeite e alho, mussarela, camarão e temperos',
+          preco: 69.90,
+          categoria: 'Pizzas',
+          disponivel: true,
+          imagem: '/placeholder.svg',
+          adicionais: []
+        },
+        {
+          id: '8',
+          nome: 'Antipasto da Casa',
+          descricao: 'Mix de queijos, embutidos e azeitonas',
+          preco: 32.90,
+          categoria: 'Entradas',
+          disponivel: true,
+          imagem: '/placeholder.svg',
+          adicionais: []
+        },
+        {
+          id: '9',
+          nome: 'Bolinho de Queijo (8 unid)',
+          descricao: 'Deliciosos bolinhos de queijo crocantes',
+          preco: 22.90,
+          categoria: 'Entradas',
+          disponivel: true,
+          imagem: '/placeholder.svg',
+          adicionais: []
+        },
+        {
+          id: '10',
+          nome: 'Cerveja Long Neck',
+          descricao: 'Cerveja gelada 330ml',
+          preco: 12.90,
+          categoria: 'Bebidas',
+          disponivel: true,
+          imagem: '/placeholder.svg',
+          adicionais: []
+        },
+        {
+          id: '11',
+          nome: 'Gelato Artesanal',
+          descricao: 'Gelato cremoso sabores variados',
+          preco: 19.90,
+          categoria: 'Sobremesas',
+          disponivel: true,
+          imagem: '/placeholder.svg',
+          adicionais: []
+        },
+        {
+          id: '12',
+          nome: 'Cannoli Siciliano',
+          descricao: 'Massa crocante recheada com ricota doce',
+          preco: 18.90,
+          categoria: 'Sobremesas',
+          disponivel: true,
+          imagem: '/placeholder.svg',
+          adicionais: []
+        }
+      ];
+    }
+    
     setProdutos(produtosMockados);
-    localStorage.setItem('restaurant_products', JSON.stringify(produtosMockados));
+    localStorage.setItem(`restaurant_products_${user.nome}`, JSON.stringify(produtosMockados));
     
     // Também salvar nos dados globais
     const produtosGlobais = JSON.parse(localStorage.getItem('zdelivery_produtos_globais') || '{}');
-    produtosGlobais[user?.nome || 'Restaurante'] = produtosMockados;
+    produtosGlobais[user.nome] = produtosMockados;
     localStorage.setItem('zdelivery_produtos_globais', JSON.stringify(produtosGlobais));
   };
 
@@ -141,7 +246,7 @@ const ProdutosPage: React.FC = () => {
 
   const salvarProdutos = (novosProdutos: any[]) => {
     setProdutos(novosProdutos);
-    localStorage.setItem('restaurant_products', JSON.stringify(novosProdutos));
+    localStorage.setItem(`restaurant_products_${user.nome}`, JSON.stringify(novosProdutos));
     
     // Também salvar em uma chave global para que o cliente possa acessar
     const produtosGlobais = JSON.parse(localStorage.getItem('zdelivery_produtos_globais') || '{}');

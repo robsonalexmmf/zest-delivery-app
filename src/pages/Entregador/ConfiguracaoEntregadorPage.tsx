@@ -37,6 +37,44 @@ const ConfiguracaoEntregadorPage: React.FC = () => {
   });
 
   useEffect(() => {
+    // Verificar se é usuário de teste primeiro
+    const testUser = localStorage.getItem('zdelivery_test_user');
+    if (testUser) {
+      try {
+        const { profile } = JSON.parse(testUser);
+        if (profile.tipo !== 'entregador') {
+          navigate('/login');
+        } else {
+          setUser(profile);
+          // Carregar configurações salvas
+          const configSalvas = localStorage.getItem(`zdelivery_config_entregador_${profile.id}`);
+          if (configSalvas) {
+            setConfiguracoes(JSON.parse(configSalvas));
+          } else {
+            // Preencher com dados do usuário
+            setConfiguracoes(prev => ({
+              ...prev,
+              dadosPessoais: {
+                ...prev.dadosPessoais,
+                nome: profile.nome,
+                telefone: profile.telefone || '',
+                cpf: profile.cpf || ''
+              },
+              pix: {
+                ...prev.pix,
+                chave: profile.cpf || profile.email
+              }
+            }));
+          }
+        }
+        return;
+      } catch (error) {
+        console.error('Error loading test user:', error);
+        localStorage.removeItem('zdelivery_test_user');
+      }
+    }
+
+    // Verificar usuário normal
     const userData = localStorage.getItem('zdelivery_user');
     if (userData) {
       const parsedUser = JSON.parse(userData);
