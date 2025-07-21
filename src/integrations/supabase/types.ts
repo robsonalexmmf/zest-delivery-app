@@ -46,6 +46,56 @@ export type Database = {
           },
         ]
       }
+      avaliacoes: {
+        Row: {
+          cliente_id: string
+          comentario_entregador: string | null
+          comentario_restaurante: string | null
+          created_at: string
+          entregador_id: string | null
+          id: string
+          nota_entregador: number | null
+          nota_restaurante: number
+          pedido_id: string
+          restaurante_id: string
+          updated_at: string
+        }
+        Insert: {
+          cliente_id: string
+          comentario_entregador?: string | null
+          comentario_restaurante?: string | null
+          created_at?: string
+          entregador_id?: string | null
+          id?: string
+          nota_entregador?: number | null
+          nota_restaurante: number
+          pedido_id: string
+          restaurante_id: string
+          updated_at?: string
+        }
+        Update: {
+          cliente_id?: string
+          comentario_entregador?: string | null
+          comentario_restaurante?: string | null
+          created_at?: string
+          entregador_id?: string | null
+          id?: string
+          nota_entregador?: number | null
+          nota_restaurante?: number
+          pedido_id?: string
+          restaurante_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "avaliacoes_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cupom_usos: {
         Row: {
           cliente_id: string | null
@@ -319,6 +369,7 @@ export type Database = {
       }
       pedidos: {
         Row: {
+          avaliado: boolean
           cliente_id: string | null
           created_at: string | null
           endereco_entrega: string
@@ -334,6 +385,7 @@ export type Database = {
           valor_entrega: number | null
         }
         Insert: {
+          avaliado?: boolean
           cliente_id?: string | null
           created_at?: string | null
           endereco_entrega: string
@@ -349,6 +401,7 @@ export type Database = {
           valor_entrega?: number | null
         }
         Update: {
+          avaliado?: boolean
           cliente_id?: string | null
           created_at?: string | null
           endereco_entrega?: string

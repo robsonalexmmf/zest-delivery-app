@@ -5,8 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { DollarSign, Package, Clock, MapPin, Truck, Settings } from 'lucide-react';
+import { DollarSign, Package, Clock, MapPin, Truck, Settings, Star } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import AvaliacoesEntregador from '@/components/Entregador/AvaliacoesEntregador';
 import { pedidosService, Pedido } from '@/services/pedidosService';
 
 const DashboardEntregador: React.FC = () => {
@@ -249,186 +251,195 @@ const DashboardEntregador: React.FC = () => {
           </Card>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8">
-          {/* Entregas em Andamento */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Truck className="w-5 h-5 mr-2" />
-                Entregas em Andamento ({entregasAndamento.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {entregasAndamento.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">
-                  Nenhuma entrega em andamento
-                </p>
-              ) : (
-                <div className="space-y-4">
-                  {entregasAndamento.map(entrega => (
-                    <div key={entrega.id} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-semibold">#{entrega.id}</span>
-                        <Badge className="bg-blue-100 text-blue-800">
-                          {entrega.status === 'saiu_para_entrega' ? 'Em entrega' : entrega.status}
-                        </Badge>
-                      </div>
-                      <div className="space-y-1 text-sm text-gray-600">
-                        <p><strong>Restaurante:</strong> {entrega.restaurante.nome}</p>
-                        <p><strong>Cliente:</strong> {entrega.cliente.nome}</p>
-                        <p className="flex items-center">
-                          <MapPin className="w-4 h-4 mr-1" />
-                          {entrega.cliente.endereco}
-                        </p>
-                        <p className="flex items-center">
-                          <Clock className="w-4 h-4 mr-1" />
-                          Estimativa: {entrega.tempoEstimado}
-                        </p>
-                        <p className="text-green-600 font-medium">
-                          Valor: R$ {entrega.valorEntrega.toFixed(2)}
-                        </p>
-                      </div>
-                      <div className="mt-3 space-x-2">
-                        <Button 
-                          size="sm" 
-                          className="bg-green-600 hover:bg-green-700"
-                          onClick={() => handleConfirmarEntrega(entrega.id)}
-                        >
-                          Confirmar Entrega
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => handleVerNoMapa(entrega.cliente.endereco)}
-                        >
-                          Ver no Mapa
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        {/* Abas principais do Dashboard */}
+        <Tabs defaultValue="dashboard" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="entregas">Entregas</TabsTrigger>
+            <TabsTrigger value="avaliacoes">Avaliações</TabsTrigger>
+          </TabsList>
 
-          {/* Entregas Disponíveis */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <Package className="w-5 h-5 mr-2" />
-                  Entregas Disponíveis ({entregasDisponiveis.length})
-                </div>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => navigate('/entregas-disponiveis')}
-                >
-                  Ver Todas
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {!disponivel ? (
-                <div className="text-center py-8">
-                  <p className="text-gray-500 mb-4">
-                    Você está offline. Ative seu status para ver entregas disponíveis.
-                  </p>
-                  <Button 
-                    onClick={() => setDisponivel(true)}
-                    className="bg-red-600 hover:bg-red-700"
-                  >
-                    Ficar Disponível
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {entregasDisponiveis.slice(0, 3).map(entrega => (
-                    <div key={entrega.id} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-semibold">#{entrega.id}</span>
-                        <div className="flex items-center space-x-2">
-                          <Badge className="bg-green-100 text-green-800">
-                            R$ {entrega.valorEntrega.toFixed(2)}
-                          </Badge>
+          <TabsContent value="dashboard" className="space-y-6">
+            <div className="grid lg:grid-cols-2 gap-8">
+              {/* Entregas em Andamento */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Truck className="w-5 h-5 mr-2" />
+                    Entregas em Andamento ({entregasAndamento.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {entregasAndamento.length === 0 ? (
+                    <p className="text-gray-500 text-center py-4">
+                      Nenhuma entrega em andamento
+                    </p>
+                  ) : (
+                    <div className="space-y-4">
+                      {entregasAndamento.map(entrega => (
+                        <div key={entrega.id} className="border rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-semibold">#{entrega.id}</span>
+                            <Badge className="bg-blue-100 text-blue-800">
+                              {entrega.status === 'saiu_para_entrega' ? 'Em entrega' : entrega.status}
+                            </Badge>
+                          </div>
+                          <div className="space-y-1 text-sm text-gray-600">
+                            <p><strong>Restaurante:</strong> {entrega.restaurante.nome}</p>
+                            <p><strong>Cliente:</strong> {entrega.cliente.nome}</p>
+                            <p className="flex items-center">
+                              <MapPin className="w-4 h-4 mr-1" />
+                              {entrega.cliente.endereco}
+                            </p>
+                            <p className="text-green-600 font-medium">
+                              Valor: R$ {entrega.valorEntrega.toFixed(2)}
+                            </p>
+                          </div>
+                          <div className="mt-3 space-x-2">
+                            <Button 
+                              size="sm" 
+                              className="bg-green-600 hover:bg-green-700"
+                              onClick={() => handleConfirmarEntrega(entrega.id)}
+                            >
+                              Confirmar Entrega
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleVerNoMapa(entrega.cliente.endereco)}
+                            >
+                              Ver no Mapa
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                      <div className="space-y-1 text-sm text-gray-600 mb-3">
-                        <p><strong>Restaurante:</strong> {entrega.restaurante.nome}</p>
-                        <p className="flex items-center">
-                          <MapPin className="w-4 h-4 mr-1" />
-                          {entrega.restaurante.endereco}
-                        </p>
-                        <p><strong>Entregar para:</strong> {entrega.cliente.nome}</p>
-                        <p className="flex items-center">
-                          <MapPin className="w-4 h-4 mr-1" />
-                          {entrega.cliente.endereco}
-                        </p>
-                        <div className="flex items-center justify-between">
-                          <span className="flex items-center">
-                            <Clock className="w-4 h-4 mr-1" />
-                            {entrega.tempoEstimado}
-                          </span>
-                          <span className="text-green-600 font-medium">
-                            Total: R$ {entrega.total.toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Entregas Disponíveis */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <Package className="w-5 h-5 mr-2" />
+                      Entregas Disponíveis ({entregasDisponiveis.length})
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => navigate('/entregas-disponiveis')}
+                    >
+                      Ver Todas
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {!disponivel ? (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500 mb-4">
+                        Você está offline. Ative seu status para ver entregas disponíveis.
+                      </p>
                       <Button 
-                        size="sm" 
-                        className="w-full bg-red-600 hover:bg-red-700"
-                        onClick={() => handleAceitarEntrega(entrega.id)}
+                        onClick={() => setDisponivel(true)}
+                        className="bg-red-600 hover:bg-red-700"
                       >
-                        Aceitar Entrega
+                        Ficar Disponível
                       </Button>
                     </div>
-                  ))}
-                  
-                  {entregasDisponiveis.length === 0 && (
-                    <p className="text-gray-500 text-center py-4">
-                      Nenhuma entrega disponível no momento
-                    </p>
+                  ) : (
+                    <div className="space-y-4">
+                      {entregasDisponiveis.slice(0, 3).map(entrega => (
+                        <div key={entrega.id} className="border rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-semibold">#{entrega.id}</span>
+                            <Badge className="bg-green-100 text-green-800">
+                              R$ {entrega.valorEntrega.toFixed(2)}
+                            </Badge>
+                          </div>
+                          <div className="space-y-1 text-sm text-gray-600 mb-3">
+                            <p><strong>Restaurante:</strong> {entrega.restaurante.nome}</p>
+                            <p><strong>Entregar para:</strong> {entrega.cliente.nome}</p>
+                            <p className="flex items-center">
+                              <MapPin className="w-4 h-4 mr-1" />
+                              {entrega.cliente.endereco}
+                            </p>
+                          </div>
+                          <Button 
+                            size="sm" 
+                            className="w-full bg-red-600 hover:bg-red-700"
+                            onClick={() => handleAceitarEntrega(entrega.id)}
+                          >
+                            Aceitar Entrega
+                          </Button>
+                        </div>
+                      ))}
+                      
+                      {entregasDisponiveis.length === 0 && (
+                        <p className="text-gray-500 text-center py-4">
+                          Nenhuma entrega disponível no momento
+                        </p>
+                      )}
+                    </div>
                   )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Resumo da Semana */}
-        <Card className="mt-8">
-          <CardHeader>
-            <CardTitle>Resumo da Semana</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-4 gap-6">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">
-                  {estatisticas.entregas.semana}
-                </div>
-                <p className="text-sm text-gray-600">Entregas</p>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">
-                  R$ {estatisticas.ganhos.semana.toFixed(2)}
-                </div>
-                <p className="text-sm text-gray-600">Ganhos</p>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">
-                  R$ {(estatisticas.ganhos.semana / estatisticas.entregas.semana).toFixed(2)}
-                </div>
-                <p className="text-sm text-gray-600">Média por entrega</p>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-orange-600">
-                  42h
-                </div>
-                <p className="text-sm text-gray-600">Horas trabalhadas</p>
-              </div>
+                </CardContent>
+              </Card>
             </div>
-          </CardContent>
-        </Card>
+
+            {/* Resumo da Semana */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Resumo da Semana</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-4 gap-6">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {estatisticas.entregas.semana}
+                    </div>
+                    <p className="text-sm text-gray-600">Entregas</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600">
+                      R$ {estatisticas.ganhos.semana.toFixed(2)}
+                    </div>
+                    <p className="text-sm text-gray-600">Ganhos</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-purple-600">
+                      R$ {(estatisticas.ganhos.semana / estatisticas.entregas.semana).toFixed(2)}
+                    </div>
+                    <p className="text-sm text-gray-600">Média por entrega</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-orange-600">
+                      42h
+                    </div>
+                    <p className="text-sm text-gray-600">Horas trabalhadas</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="entregas">
+            <div className="text-center py-8">
+              <Truck className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500">Vá para a página de status para acompanhar entregas</p>
+              <Button 
+                onClick={() => navigate('/status-pedidos')}
+                className="mt-4 bg-red-600 hover:bg-red-700"
+              >
+                Ver Status dos Pedidos
+              </Button>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="avaliacoes">
+            <AvaliacoesEntregador entregadorNome={user.nome} />
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );

@@ -13,7 +13,12 @@ import { pedidosService, Pedido } from '@/services/pedidosService';
 const MeusPedidosPage: React.FC = () => {
   const [user, setUser] = useState<any>(null);
   const [meusPedidos, setMeusPedidos] = useState<Pedido[]>([]);
-  const [modalAvaliacao, setModalAvaliacao] = useState({ isOpen: false, pedidoId: '', restaurante: '' });
+  const [modalAvaliacao, setModalAvaliacao] = useState({ 
+    isOpen: false, 
+    pedidoId: '', 
+    restaurante: '', 
+    entregador: '' 
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -139,12 +144,28 @@ const MeusPedidosPage: React.FC = () => {
     }
   };
 
-  const handleAvaliar = (pedidoId: string, restaurante: string) => {
-    setModalAvaliacao({ isOpen: true, pedidoId, restaurante });
+  const handleAvaliar = (pedidoId: string, restaurante: string, entregador?: string) => {
+    setModalAvaliacao({ 
+      isOpen: true, 
+      pedidoId, 
+      restaurante, 
+      entregador: entregador || '' 
+    });
   };
 
   const handleCloseModal = () => {
-    setModalAvaliacao({ isOpen: false, pedidoId: '', restaurante: '' });
+    setModalAvaliacao({ 
+      isOpen: false, 
+      pedidoId: '', 
+      restaurante: '', 
+      entregador: '' 
+    });
+  };
+
+  const handleAvaliacaoEnviada = () => {
+    // Recarregar pedidos para atualizar o status de avaliado
+    const pedidosCliente = pedidosService.getPedidosPorCliente(user.nome);
+    setMeusPedidos(pedidosCliente);
   };
 
   const handleRastrear = (pedido: Pedido) => {
@@ -336,15 +357,22 @@ const MeusPedidosPage: React.FC = () => {
                       </Button>
                     )}
                     
-                    {pedido.status === 'entregue' && (
+                    {pedido.status === 'entregue' && !pedido.avaliado && (
                       <Button 
                         size="sm"
                         className="bg-red-600 hover:bg-red-700"
-                        onClick={() => handleAvaliar(pedido.id, pedido.restaurante.nome)}
+                        onClick={() => handleAvaliar(pedido.id, pedido.restaurante.nome, pedido.entregador?.nome)}
                       >
                         <Star className="w-4 h-4 mr-1" />
                         Avaliar Pedido
                       </Button>
+                    )}
+
+                    {pedido.status === 'entregue' && pedido.avaliado && (
+                      <Badge className="bg-green-100 text-green-800">
+                        <Star className="w-4 h-4 mr-1" />
+                        Pedido Avaliado
+                      </Badge>
                     )}
                     
                     <Button 
@@ -386,6 +414,8 @@ const MeusPedidosPage: React.FC = () => {
         onClose={handleCloseModal}
         pedidoId={modalAvaliacao.pedidoId}
         restaurante={modalAvaliacao.restaurante}
+        entregador={modalAvaliacao.entregador}
+        onAvaliacaoEnviada={handleAvaliacaoEnviada}
       />
     </div>
   );

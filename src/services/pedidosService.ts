@@ -30,6 +30,7 @@ export interface Pedido {
   metodoPagamento: 'dinheiro' | 'cartao' | 'pix';
   valorEntrega: number;
   tempoEstimado: string;
+  avaliado?: boolean;
 }
 
 class PedidosService {
@@ -123,6 +124,19 @@ class PedidosService {
     this.pedidos.push(novoPedido);
     this.salvarPedidos();
     return novoPedido.id;
+  }
+
+  marcarComoAvaliado(pedidoId: string): boolean {
+    const pedidoIndex = this.pedidos.findIndex(p => p.id === pedidoId);
+    if (pedidoIndex !== -1) {
+      this.pedidos[pedidoIndex] = {
+        ...this.pedidos[pedidoIndex],
+        avaliado: true
+      };
+      this.salvarPedidos();
+      return true;
+    }
+    return false;
   }
 }
 
