@@ -105,6 +105,28 @@ const DashboardAdmin: React.FC = () => {
   useEffect(() => {
     // Verificar se o usuário está logado e é admin
     const checkUserAccess = async () => {
+      // Verificar se é usuário de teste primeiro
+      const testUser = localStorage.getItem('zdelivery_test_user');
+      if (testUser) {
+        try {
+          const { profile } = JSON.parse(testUser);
+          if (profile.tipo !== 'admin') {
+            toast({
+              title: "Acesso negado",
+              description: "Você não tem permissão para acessar esta página",
+              variant: "destructive"
+            });
+            navigate('/auth');
+          } else {
+            carregarDados();
+          }
+          return;
+        } catch (error) {
+          console.error('Error loading test user:', error);
+          localStorage.removeItem('zdelivery_test_user');
+        }
+      }
+
       // Aguardar o carregamento do usuário
       if (!user && userProfile === null) {
         return; // Ainda carregando
