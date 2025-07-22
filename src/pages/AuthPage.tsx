@@ -40,9 +40,11 @@ const AuthPage: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      // Verificar o tipo de usuário no userProfile para redirecionamento correto
-      const checkUserProfileAndRedirect = async () => {
+      // Aguardar um pouco para garantir que o perfil foi carregado
+      const redirectToCorrectDashboard = async () => {
         try {
+          await new Promise(resolve => setTimeout(resolve, 500)); // Aguardar 500ms
+          
           const { data: profile } = await supabase
             .from('profiles')
             .select('tipo')
@@ -66,6 +68,7 @@ const AuthPage: React.FC = () => {
                 break;
             }
           } else {
+            // Se não encontrou perfil, ir para página inicial
             navigate('/');
           }
         } catch (error) {
@@ -74,7 +77,7 @@ const AuthPage: React.FC = () => {
         }
       };
       
-      checkUserProfileAndRedirect();
+      redirectToCorrectDashboard();
     }
   }, [user, navigate]);
 

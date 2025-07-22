@@ -105,33 +105,32 @@ const DashboardAdmin: React.FC = () => {
   useEffect(() => {
     // Verificar se o usuário está logado e é admin
     const checkUserAccess = async () => {
-      // Se não está autenticado, redirecionar para login
+      // Aguardar o carregamento do usuário
+      if (!user && userProfile === null) {
+        return; // Ainda carregando
+      }
+      
+      // Se não está autenticado após carregamento, redirecionar para login
       if (!user) {
         navigate('/auth');
         return;
       }
       
       // Verificar se o perfil é do tipo admin
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('tipo')
-        .eq('id', user.id)
-        .maybeSingle();
-      
-      if (!profile || profile.tipo !== 'admin') {
+      if (userProfile && userProfile.tipo !== 'admin') {
         toast({
           title: "Acesso negado",
           description: "Você não tem permissão para acessar esta página",
           variant: "destructive"
         });
         navigate('/auth');
-      } else {
+      } else if (userProfile) {
         carregarDados();
       }
     };
     
     checkUserAccess();
-  }, [user, navigate]);
+  }, [user, userProfile, navigate]);
 
   const carregarDados = async () => {
     // Carregar dados reais do Supabase quando possível
