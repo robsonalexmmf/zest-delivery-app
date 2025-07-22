@@ -537,7 +537,7 @@ export type Database = {
           created_at?: string | null
           email: string
           endereco?: string | null
-          id: string
+          id?: string
           nome: string
           telefone?: string | null
           tipo?: Database["public"]["Enums"]["user_type"]
