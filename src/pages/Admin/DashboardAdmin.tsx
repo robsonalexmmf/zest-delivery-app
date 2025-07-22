@@ -13,6 +13,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { toast } from '@/hooks/use-toast';
 import { pagamentoService } from '@/services/pagamentoService';
 import { pedidosService } from '@/services/pedidosService';
+import { supabase } from '@/integrations/supabase/client';
+import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
+import { useSupabaseData } from '@/hooks/useSupabaseData';
 
 interface Usuario {
   id: string;
@@ -20,7 +23,7 @@ interface Usuario {
   email: string;
   telefone: string;
   endereco: string;
-  tipo: 'cliente' | 'restaurante' | 'entregador';
+  tipo: 'cliente' | 'restaurante' | 'entregador' | 'admin';
   status: 'ativo' | 'inativo' | 'suspenso';
   dataCadastro: string;
   ultimoAcesso: string;
@@ -70,9 +73,12 @@ interface Configuracao {
 }
 
 const DashboardAdmin: React.FC = () => {
-  const [user, setUser] = useState<any>(null);
+  const navigate = useNavigate();
+  const { user } = useSupabaseAuth();
+  const { userProfile, pedidos } = useSupabaseData();
+  
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
-  const [pedidos, setPedidos] = useState<Pedido[]>([]);
+  const [pedidosList, setPedidosList] = useState<Pedido[]>([]);
   const [mensalidades, setMensalidades] = useState<Mensalidade[]>([]);
   const [suportes, setSuportes] = useState<Suporte[]>([]);
   const [configuracoes, setConfiguracoes] = useState<Configuracao[]>([]);
@@ -95,110 +101,127 @@ const DashboardAdmin: React.FC = () => {
     crescimentoMensal: 15.3,
     ticketMedio: 42.50
   });
-  const navigate = useNavigate();
 
   useEffect(() => {
-    // Verificar se é usuário de teste primeiro
-    const testUser = localStorage.getItem('zdelivery_test_user');
-    if (testUser) {
-      try {
-        const { profile } = JSON.parse(testUser);
-        if (profile.tipo !== 'admin') {
-          navigate('/login');
-        } else {
-          setUser(profile);
-          carregarDados();
-        }
+    // Verificar se o usuário está logado e é admin
+    const checkUserAccess = async () => {
+      // Se não está autenticado, redirecionar para login
+      if (!user) {
+        navigate('/auth');
         return;
-      } catch (error) {
-        console.error('Error loading test user:', error);
-        localStorage.removeItem('zdelivery_test_user');
       }
-    }
-
-    // Verificar usuário normal
-    const userData = localStorage.getItem('zdelivery_user');
-    if (userData) {
-      const parsedUser = JSON.parse(userData);
-      if (parsedUser.tipo !== 'admin') {
-        navigate('/login');
+      
+      // Verificar se o perfil é do tipo admin
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('tipo')
+        .eq('id', user.id)
+        .maybeSingle();
+      
+      if (!profile || profile.tipo !== 'admin') {
+        toast({
+          title: "Acesso negado",
+          description: "Você não tem permissão para acessar esta página",
+          variant: "destructive"
+        });
+        navigate('/auth');
       } else {
-        setUser(parsedUser);
         carregarDados();
       }
-    } else {
-      navigate('/login');
+    };
+    
+    checkUserAccess();
+  }, [user, navigate]);
+
+  const carregarDados = async () => {
+    // Carregar dados reais do Supabase quando possível
+    
+    // Buscar perfis de usuários
+    const { data: profilesData } = await supabase
+      .from('profiles')
+      .select('*');
+    
+    // Criar usuários a partir dos perfis
+    const usuariosMock: Usuario[] = (profilesData || []).map((profile) => ({
+      id: profile.id,
+      nome: profile.nome || 'Sem nome',
+      email: profile.email || 'sem@email.com',
+      telefone: profile.telefone || 'Não informado',
+      endereco: profile.endereco || 'Não informado',
+      tipo: profile.tipo as any,
+      status: 'ativo',
+      dataCadastro: new Date(profile.created_at).toLocaleDateString('pt-BR'),
+      ultimoAcesso: new Date(profile.updated_at).toLocaleDateString('pt-BR'),
+      totalPedidos: 0,
+      totalGasto: 0
+    }));
+    
+    if (usuariosMock.length === 0) {
+      // Dados simulados caso não tenha dados do Supabase
+      usuariosMock.push(
+        {
+          id: '1',
+          nome: 'João Silva',
+          email: 'cliente@test.com',
+          telefone: '(11) 99999-9999',
+          endereco: 'Rua A, 123 - Centro',
+          tipo: 'cliente',
+          status: 'ativo',
+          dataCadastro: '2024-01-15',
+          ultimoAcesso: '2024-01-20',
+          totalPedidos: 15,
+          totalGasto: 487.50
+        },
+        {
+          id: '2',
+          nome: 'Pizzaria do Mario',
+          email: 'restaurante@test.com',
+          telefone: '(11) 3333-3333',
+          endereco: 'Rua das Flores, 123',
+          tipo: 'restaurante',
+          status: 'ativo',
+          dataCadastro: '2024-01-10',
+          ultimoAcesso: '2024-01-20'
+        },
+        {
+          id: '3',
+          nome: 'Carlos Entregador',
+          email: 'entregador@test.com',
+          telefone: '(11) 88888-8888',
+          endereco: 'Av. Central, 456',
+          tipo: 'entregador',
+          status: 'ativo',
+          dataCadastro: '2024-01-12',
+          ultimoAcesso: '2024-01-20'
+        },
+        {
+          id: '4',
+          nome: 'Admin Sistema',
+          email: 'admin@test.com',
+          telefone: '(11) 77777-7777',
+          endereco: 'Rua Admin, 1',
+          tipo: 'admin',
+          status: 'ativo',
+          dataCadastro: '2024-01-01',
+          ultimoAcesso: '2024-01-21'
+        }
+      );
     }
-  }, [navigate]);
 
-  const carregarDados = () => {
-    // Simulando dados expandidos de usuários
-    const usuariosMock: Usuario[] = [
-      {
-        id: '1',
-        nome: 'João Silva',
-        email: 'cliente@test.com',
-        telefone: '(11) 99999-9999',
-        endereco: 'Rua A, 123 - Centro',
-        tipo: 'cliente',
-        status: 'ativo',
-        dataCadastro: '2024-01-15',
-        ultimoAcesso: '2024-01-20',
-        totalPedidos: 15,
-        totalGasto: 487.50
-      },
-      {
-        id: '2',
-        nome: 'Pizzaria do Mario',
-        email: 'restaurante@test.com',
-        telefone: '(11) 3333-3333',
-        endereco: 'Rua das Flores, 123',
-        tipo: 'restaurante',
-        status: 'ativo',
-        dataCadastro: '2024-01-10',
-        ultimoAcesso: '2024-01-20'
-      },
-      {
-        id: '3',
-        nome: 'Carlos Entregador',
-        email: 'entregador@test.com',
-        telefone: '(11) 88888-8888',
-        endereco: 'Av. Central, 456',
-        tipo: 'entregador',
-        status: 'ativo',
-        dataCadastro: '2024-01-12',
-        ultimoAcesso: '2024-01-20'
-      },
-      {
-        id: '4',
-        nome: 'Maria Santos',
-        email: 'maria@test.com',
-        telefone: '(11) 77777-7777',
-        endereco: 'Rua B, 789',
-        tipo: 'cliente',
-        status: 'ativo',
-        dataCadastro: '2024-01-18',
-        ultimoAcesso: '2024-01-19',
-        totalPedidos: 8,
-        totalGasto: 234.90
-      }
-    ];
-
-    // Carregar pedidos do serviço
-    const todosPedidos = pedidosService.getPedidos();
-    const pedidosMock: Pedido[] = todosPedidos.map(p => ({
-      id: p.id,
-      cliente: p.cliente.nome,
-      restaurante: p.restaurante.nome,
-      entregador: p.entregador?.nome,
+    // Formatar pedidos para a exibição na tabela
+    const pedidosFormatados = pedidos.map(p => ({
+      id: p.id.substring(0, 8),
+      cliente: p.profiles?.nome || 'Cliente',
+      restaurante: p.restaurantes?.nome || 'Restaurante',
+      entregador: p.entregadores?.profiles?.nome,
       status: p.status,
-      valor: p.total,
-      data: p.data,
-      hora: p.hora,
-      metodoPagamento: p.metodoPagamento
+      valor: parseFloat(p.total),
+      data: new Date(p.created_at).toLocaleDateString('pt-BR'),
+      hora: new Date(p.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      metodoPagamento: p.metodo_pagamento
     }));
 
-    // Dados de suporte
+    // Dados de suporte simulados
     const suportesMock: Suporte[] = [
       {
         id: '1',
@@ -295,7 +318,7 @@ const DashboardAdmin: React.FC = () => {
     ];
 
     setUsuarios(usuariosMock);
-    setPedidos(pedidosMock);
+    setPedidosList(pedidosFormatados);
     setMensalidades(mensalidadesMock);
     setSuportes(suportesMock);
     setConfiguracoes(configuracoesMock);
@@ -311,15 +334,15 @@ const DashboardAdmin: React.FC = () => {
       totalClientes: usuariosMock.filter(u => u.tipo === 'cliente').length,
       totalRestaurantes: usuariosMock.filter(u => u.tipo === 'restaurante').length,
       totalEntregadores: usuariosMock.filter(u => u.tipo === 'entregador').length,
-      totalPedidos: pedidosMock.length,
-      pedidosHoje: pedidosMock.filter(p => p.data === new Date().toISOString().split('T')[0]).length,
-      receitaTotal: pedidosMock.reduce((total, p) => total + p.valor, 0),
+      totalPedidos: pedidosFormatados.length,
+      pedidosHoje: pedidosFormatados.filter(p => p.data === new Date().toLocaleDateString('pt-BR')).length,
+      receitaTotal: pedidosFormatados.reduce((total, p) => total + p.valor, 0),
       mensalidadesPendentes,
       receitaMensalidades,
       suportesAbertos,
       mediaAvaliacoes: 4.5,
       crescimentoMensal: 15.3,
-      ticketMedio: pedidosMock.length > 0 ? pedidosMock.reduce((total, p) => total + p.valor, 0) / pedidosMock.length : 0
+      ticketMedio: pedidosFormatados.length > 0 ? pedidosFormatados.reduce((total, p) => total + p.valor, 0) / pedidosFormatados.length : 0
     });
   };
 
@@ -390,7 +413,7 @@ const DashboardAdmin: React.FC = () => {
     };
     
     return (
-      <Badge className={colors[status as keyof typeof colors]}>
+      <Badge className={colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800'}>
         {status.replace('_', ' ')}
       </Badge>
     );
@@ -416,7 +439,7 @@ const DashboardAdmin: React.FC = () => {
       premium: 'Premium',
       enterprise: 'Enterprise'
     };
-    return planos[plano as keyof typeof planos];
+    return planos[plano as keyof typeof planos] || plano;
   };
 
   const usuariosFiltrados = usuarios.filter(usuario => {
@@ -427,11 +450,12 @@ const DashboardAdmin: React.FC = () => {
     return matchesTipo && matchesStatus && matchesSearch;
   });
 
-  if (!user) return null;
+  // Retornar null enquanto carrega ou se não tiver usuário
+  if (!userProfile) return null;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header userType="admin" userName={user.nome} />
+      <Header userType="admin" userName={userProfile.nome || "Administrador"} />
       
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
@@ -557,6 +581,7 @@ const DashboardAdmin: React.FC = () => {
                       <SelectItem value="cliente">Clientes</SelectItem>
                       <SelectItem value="restaurante">Restaurantes</SelectItem>
                       <SelectItem value="entregador">Entregadores</SelectItem>
+                      <SelectItem value="admin">Administradores</SelectItem>
                     </SelectContent>
                   </Select>
                   <Select value={filtroStatus} onValueChange={setFiltroStatus}>
@@ -656,7 +681,7 @@ const DashboardAdmin: React.FC = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {pedidos.map(pedido => (
+                    {pedidosList.map(pedido => (
                       <TableRow key={pedido.id}>
                         <TableCell className="font-medium">#{pedido.id}</TableCell>
                         <TableCell>{pedido.cliente}</TableCell>
@@ -860,7 +885,7 @@ const DashboardAdmin: React.FC = () => {
                   <strong>Endereço:</strong>
                   <p>{selectedUser.endereco}</p>
                 </div>
-                {selectedUser.tipo === 'cliente' && (
+                {selectedUser.tipo === 'cliente' && selectedUser.totalPedidos !== undefined && (
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <strong>Total de Pedidos:</strong>

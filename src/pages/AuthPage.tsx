@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { toast } from '@/hooks/use-toast';
 import Logo from '@/components/common/Logo';
+import { supabase } from '@/integrations/supabase/client';
 
 const AuthPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -39,7 +40,41 @@ const AuthPage: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      navigate('/');
+      // Verificar o tipo de usuário no userProfile para redirecionamento correto
+      const checkUserProfileAndRedirect = async () => {
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('tipo')
+            .eq('id', user.id)
+            .maybeSingle();
+          
+          if (profile) {
+            switch(profile.tipo) {
+              case 'admin':
+                navigate('/dashboard-admin');
+                break;
+              case 'restaurante':
+                navigate('/dashboard-restaurante');
+                break;
+              case 'entregador':
+                navigate('/dashboard-entregador');
+                break;
+              case 'cliente':
+              default:
+                navigate('/restaurantes');
+                break;
+            }
+          } else {
+            navigate('/');
+          }
+        } catch (error) {
+          console.error('Erro ao buscar perfil:', error);
+          navigate('/');
+        }
+      };
+      
+      checkUserProfileAndRedirect();
     }
   }, [user, navigate]);
 
@@ -124,7 +159,8 @@ const AuthPage: React.FC = () => {
     const testUsers = {
       cliente: { email: 'cliente@test.com', password: '123456' },
       restaurante: { email: 'restaurante@test.com', password: '123456' },
-      entregador: { email: 'entregador@test.com', password: '123456' }
+      entregador: { email: 'entregador@test.com', password: '123456' },
+      admin: { email: 'admin@test.com', password: '123456' }
     };
 
     const testUser = testUsers[tipo as keyof typeof testUsers];
@@ -211,6 +247,14 @@ const AuthPage: React.FC = () => {
                       className="text-xs"
                     >
                       Login como Entregador
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleTestLogin('admin')}
+                      className="text-xs bg-gray-100"
+                    >
+                      Login como Administrador
                     </Button>
                   </div>
                 </div>
