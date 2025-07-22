@@ -31,8 +31,8 @@ const MeusPedidosPage: React.FC = () => {
   const meusPedidos = user ? pedidos.filter(p => p.cliente_id === user.id) : [];
 
   useEffect(() => {
-    // Verificar se o usuário está autenticado e é cliente
-    if (user && user.tipo !== 'cliente') {
+  // Verificar se o usuário está autenticado e é cliente
+    if (userProfile && userProfile.tipo !== 'cliente') {
       navigate('/login');
     }
 
@@ -169,7 +169,7 @@ const MeusPedidosPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header userType="cliente" userName={user.nome} cartCount={0} />
+      <Header userType="cliente" userName={userProfile?.nome || ''} cartCount={0} />
       
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
