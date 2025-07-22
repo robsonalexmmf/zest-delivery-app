@@ -1,13 +1,13 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Star, Store, Truck } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { pedidosService } from '@/services/pedidosService';
+import { useSupabaseData } from '@/hooks/useSupabaseData';
+import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 
 interface ModalAvaliacaoProps {
   isOpen: boolean;
@@ -26,6 +26,8 @@ const ModalAvaliacao: React.FC<ModalAvaliacaoProps> = ({
   entregador,
   onAvaliacaoEnviada
 }) => {
+  const { user } = useSupabaseAuth();
+  const { createAvaliacao, pedidos, updatePedidoStatus } = useSupabaseData();
   const [notaRestaurante, setNotaRestaurante] = useState(0);
   const [notaEntregador, setNotaEntregador] = useState(0);
   const [comentarioRestaurante, setComentarioRestaurante] = useState('');
@@ -33,20 +35,6 @@ const ModalAvaliacao: React.FC<ModalAvaliacaoProps> = ({
   const [hoverNotaRestaurante, setHoverNotaRestaurante] = useState(0);
   const [hoverNotaEntregador, setHoverNotaEntregador] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState<any>(null);
-
-  useEffect(() => {
-    // Verificar usuário logado
-    const testUser = localStorage.getItem('zdelivery_test_user');
-    if (testUser) {
-      try {
-        const { profile } = JSON.parse(testUser);
-        setUser(profile);
-      } catch (error) {
-        console.error('Erro ao carregar usuário:', error);
-      }
-    }
-  }, []);
 
   const resetForm = () => {
     setNotaRestaurante(0);
@@ -58,6 +46,15 @@ const ModalAvaliacao: React.FC<ModalAvaliacaoProps> = ({
   };
 
   const handleSubmit = async () => {
+    if (!user) {
+      toast({
+        title: 'Usuário não autenticado',
+        description: 'Você precisa estar logado para enviar uma avaliação.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     if (notaRestaurante === 0) {
       toast({
         title: 'Avaliação obrigatória',
@@ -79,68 +76,34 @@ const ModalAvaliacao: React.FC<ModalAvaliacaoProps> = ({
     setLoading(true);
 
     try {
-      // Primeiro buscar os dados do pedido para obter os IDs necessários
-      const pedidos = pedidosService.getPedidos();
+      // Encontrar o pedido nos pedidos carregados
       const pedido = pedidos.find(p => p.id === pedidoId);
       
       if (!pedido) {
         throw new Error('Pedido não encontrado');
       }
 
-      // Buscar o restaurante para obter o ID
-      const { data: restaurantes, error: restauranteError } = await supabase
-        .from('restaurantes')
-        .select('id')
-        .eq('nome', restaurante)
-        .maybeSingle();
+      // Criar avaliação usando o hook
+      const { data, error } = await createAvaliacao({
+        pedido_id: pedidoId,
+        cliente_id: user.id,
+        restaurante_id: pedido.restaurante_id,
+        entregador_id: pedido.entregador_id,
+        nota_restaurante: notaRestaurante,
+        nota_entregador: entregador ? notaEntregador : null,
+        comentario_restaurante: comentarioRestaurante || null,
+        comentario_entregador: entregador ? comentarioEntregador || null : null
+      });
 
-      if (restauranteError) {
-        throw restauranteError;
-      }
-
-      let entregadorId = null;
-      if (entregador) {
-        const { data: entregadorData, error: entregadorError } = await supabase
-          .from('entregadores')
-          .select('id')
-          .eq('user_id', (await supabase.from('profiles').select('id').eq('nome', entregador).maybeSingle()).data?.id)
-          .maybeSingle();
-
-        if (!entregadorError && entregadorData) {
-          entregadorId = entregadorData.id;
-        }
-      }
-
-      // Inserir avaliação no Supabase
-      const { error: avaliacaoError } = await supabase
-        .from('avaliacoes')
-        .insert({
-          pedido_id: pedidoId,
-          cliente_id: user.id,
-          restaurante_id: restaurantes?.id,
-          entregador_id: entregadorId,
-          nota_restaurante: notaRestaurante,
-          nota_entregador: entregador ? notaEntregador : null,
-          comentario_restaurante: comentarioRestaurante || null,
-          comentario_entregador: entregador ? comentarioEntregador || null : null
-        });
-
-      if (avaliacaoError) {
-        throw avaliacaoError;
+      if (error) {
+        throw error;
       }
 
       // Atualizar status do pedido para avaliado
-      const { error: pedidoError } = await supabase
-        .from('pedidos')
-        .update({ avaliado: true })
-        .eq('id', pedidoId);
-
-      if (pedidoError) {
-        console.warn('Erro ao atualizar status de avaliado:', pedidoError);
+      const updateResult = await updatePedidoStatus(pedidoId, "entregue", undefined, true);
+      if (updateResult.error) {
+        console.warn('Erro ao atualizar status de avaliado:', updateResult.error);
       }
-
-      // Atualizar no localStorage também
-      pedidosService.marcarComoAvaliado(pedidoId);
 
       toast({
         title: 'Avaliação enviada!',

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Layout/Header';
@@ -8,11 +7,18 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Clock, MapPin, Star, Package, Truck, Bell } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { pedidosService, Pedido } from '@/services/pedidosService';
+import { useSupabaseData } from '@/hooks/useSupabaseData';
+import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
+
+interface PedidoItem {
+  quantidade: number;
+  nome: string;
+  preco: number;
+}
 
 const MeusPedidosPage: React.FC = () => {
-  const [user, setUser] = useState<any>(null);
-  const [meusPedidos, setMeusPedidos] = useState<Pedido[]>([]);
+  const { user } = useSupabaseAuth();
+  const { pedidos, userProfile } = useSupabaseData();
   const [modalAvaliacao, setModalAvaliacao] = useState({ 
     isOpen: false, 
     pedidoId: '', 
@@ -21,99 +27,20 @@ const MeusPedidosPage: React.FC = () => {
   });
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Verificar se é usuário de teste primeiro
-    const testUser = localStorage.getItem('zdelivery_test_user');
-    if (testUser) {
-      try {
-        const { profile } = JSON.parse(testUser);
-        if (profile.tipo !== 'cliente') {
-          navigate('/login');
-        } else {
-          setUser(profile);
-        }
-        return;
-      } catch (error) {
-        console.error('Error loading test user:', error);
-        localStorage.removeItem('zdelivery_test_user');
-      }
-    }
+  // Filtrar pedidos para mostrar apenas os do cliente atual
+  const meusPedidos = user ? pedidos.filter(p => p.cliente_id === user.id) : [];
 
-    // Verificar usuário normal
-    const userData = localStorage.getItem('zdelivery_user');
-    if (userData) {
-      const parsedUser = JSON.parse(userData);
-      if (parsedUser.tipo !== 'cliente') {
-        navigate('/login');
-      } else {
-        setUser(parsedUser);
-      }
-    } else {
+  useEffect(() => {
+    // Verificar se o usuário está autenticado e é cliente
+    if (user && user.tipo !== 'cliente') {
       navigate('/login');
     }
-  }, [navigate]);
-
-  useEffect(() => {
-    if (!user) return;
 
     // Solicitar permissão para notificações
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
-
-    let pedidosAnteriores: Pedido[] = [];
-
-    const unsubscribe = pedidosService.subscribe((pedidos) => {
-      const pedidosCliente = pedidosService.getPedidosPorCliente(user.nome);
-      
-      // Detectar mudanças de status comparando com estado anterior local
-      pedidosCliente.forEach(pedidoAtual => {
-        const pedidoAnterior = pedidosAnteriores.find(p => p.id === pedidoAtual.id);
-        
-        if (pedidoAnterior && pedidoAnterior.status !== pedidoAtual.status) {
-          let mensagem = '';
-          switch (pedidoAtual.status) {
-            case 'em_preparo':
-              mensagem = `Seu pedido ${pedidoAtual.id} está sendo preparado pelo restaurante`;
-              break;
-            case 'pronto':
-              mensagem = `Seu pedido ${pedidoAtual.id} está pronto e aguardando entregador`;
-              break;
-            case 'saiu_para_entrega':
-              mensagem = `Seu pedido ${pedidoAtual.id} saiu para entrega com ${pedidoAtual.entregador?.nome}`;
-              break;
-            case 'entregue':
-              mensagem = `Seu pedido ${pedidoAtual.id} foi entregue com sucesso!`;
-              break;
-            case 'cancelado':
-              mensagem = `Seu pedido ${pedidoAtual.id} foi cancelado`;
-              break;
-          }
-          
-          if (mensagem) {
-            toast({
-              title: '📱 Atualização do Pedido',
-              description: mensagem,
-            });
-
-            // Notificação do navegador
-            if ('Notification' in window && Notification.permission === 'granted') {
-              new Notification('ZDelivery - Atualização do Pedido', {
-                body: mensagem,
-                icon: '/favicon.ico'
-              });
-            }
-          }
-        }
-      });
-      
-      // Atualizar referência dos pedidos anteriores
-      pedidosAnteriores = [...pedidosCliente];
-      setMeusPedidos(pedidosCliente);
-    });
-
-    return unsubscribe;
-  }, [user]);
+  }, [user, navigate]);
 
   const getStatusBadge = (status: string) => {
     const statusMap = {
@@ -144,12 +71,12 @@ const MeusPedidosPage: React.FC = () => {
     }
   };
 
-  const handleAvaliar = (pedidoId: string, restaurante: string, entregador?: string) => {
+  const handleAvaliar = (pedidoId: string, restauranteNome: string, entregadorNome?: string) => {
     setModalAvaliacao({ 
       isOpen: true, 
       pedidoId, 
-      restaurante, 
-      entregador: entregador || '' 
+      restaurante: restauranteNome, 
+      entregador: entregadorNome || '' 
     });
   };
 
@@ -163,22 +90,35 @@ const MeusPedidosPage: React.FC = () => {
   };
 
   const handleAvaliacaoEnviada = () => {
-    // Recarregar pedidos para atualizar o status de avaliado
-    const pedidosCliente = pedidosService.getPedidosPorCliente(user.nome);
-    setMeusPedidos(pedidosCliente);
+    // O hook useSupabaseData já cuida de atualizar os pedidos via subscription
+    toast({
+      title: 'Avaliação registrada',
+      description: 'Obrigado por avaliar seu pedido!'
+    });
   };
 
-  const handleRastrear = (pedido: Pedido) => {
-    if (pedido.status === 'saiu_para_entrega' && pedido.entregador) {
+  const handleRastrear = (pedido: any) => {
+    if (pedido.status === 'saiu_para_entrega' && pedido.entregadores) {
+      const entregadorNome = pedido.entregadores.profiles.nome;
+      const entregadorTelefone = pedido.entregadores.profiles.telefone || 'não disponível';
+      
       toast({
         title: 'Rastreamento em Tempo Real',
-        description: `Seu pedido está com ${pedido.entregador.nome}. Acompanhe pelo mapa.`,
+        description: `Seu pedido está com ${entregadorNome}. Tel: ${entregadorTelefone}`,
       });
       
       // Abrir Google Maps com rota do restaurante ao cliente
-      const origem = encodeURIComponent(pedido.restaurante.endereco);
-      const destino = encodeURIComponent(pedido.cliente.endereco);
-      window.open(`https://www.google.com/maps/dir/${origem}/${destino}`, '_blank');
+      if (pedido.restaurantes.endereco && pedido.profiles.endereco) {
+        const origem = encodeURIComponent(pedido.restaurantes.endereco);
+        const destino = encodeURIComponent(pedido.profiles.endereco);
+        window.open(`https://www.google.com/maps/dir/${origem}/${destino}`, '_blank');
+      } else {
+        toast({
+          title: 'Informações incompletas',
+          description: 'Não foi possível abrir o mapa devido a informações de endereço incompletas',
+          variant: 'destructive'
+        });
+      }
     } else {
       toast({
         title: 'Status do Pedido',
@@ -197,22 +137,32 @@ const MeusPedidosPage: React.FC = () => {
     navigate(`/restaurante/${restauranteSlug}`);
   };
 
-  const getTempoEstimadoRestante = (pedido: Pedido) => {
+  const getTempoEstimadoRestante = (pedido: any) => {
     if (pedido.status === 'entregue' || pedido.status === 'cancelado') {
       return null;
     }
     
     // Lógica simples para estimar tempo restante
     const agora = new Date();
-    const horaInicial = new Date(`${pedido.data} ${pedido.hora}`);
+    const horaInicial = new Date(pedido.created_at);
     const tempoDecorrido = Math.floor((agora.getTime() - horaInicial.getTime()) / (1000 * 60));
-    const tempoEstimadoMinutos = parseInt(pedido.tempoEstimado);
+    
+    const tempoEstimadoTexto = pedido.tempo_estimado || '30 min';
+    const tempoEstimadoMinutos = parseInt(tempoEstimadoTexto);
     const tempoRestante = tempoEstimadoMinutos - tempoDecorrido;
     
     if (tempoRestante > 0) {
       return `${tempoRestante}min restantes`;
     }
     return 'Deveria chegar a qualquer momento';
+  };
+
+  const formatarData = (dataStr: string) => {
+    const data = new Date(dataStr);
+    return {
+      data: data.toLocaleDateString('pt-BR'),
+      hora: data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    };
   };
 
   if (!user) return null;
@@ -252,7 +202,7 @@ const MeusPedidosPage: React.FC = () => {
           <Card>
             <CardContent className="p-4 text-center">
               <div className="text-2xl font-bold text-blue-600">
-                R$ {meusPedidos.reduce((total, p) => total + p.total, 0).toFixed(2)}
+                R$ {meusPedidos.reduce((total, p) => total + parseFloat(p.total), 0).toFixed(2)}
               </div>
               <p className="text-sm text-gray-600">Total gasto</p>
             </CardContent>
@@ -269,124 +219,131 @@ const MeusPedidosPage: React.FC = () => {
 
         {/* Lista de Pedidos */}
         <div className="space-y-6">
-          {meusPedidos.map(pedido => (
-            <Card key={pedido.id} className="overflow-hidden">
-              <CardHeader className="pb-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
+          {meusPedidos.map(pedido => {
+            const { data, hora } = formatarData(pedido.created_at);
+            return (
+              <Card key={pedido.id} className="overflow-hidden">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div>
+                        <CardTitle className="text-lg">{pedido.restaurantes?.nome}</CardTitle>
+                        <p className="text-sm text-gray-500">Pedido #{pedido.id.slice(0, 8)} • {data} às {hora}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <Badge className={getStatusBadge(pedido.status).color}>
+                        <div className="flex items-center space-x-1">
+                          {getStatusIcon(pedido.status)}
+                          <span>{getStatusBadge(pedido.status).label}</span>
+                        </div>
+                      </Badge>
+                      <span className="font-bold text-lg text-green-600">
+                        R$ {parseFloat(pedido.total).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </CardHeader>
+                
+                <CardContent>
+                  <div className="space-y-4">
+                    {/* Tempo estimado */}
+                    {getTempoEstimadoRestante(pedido) && (
+                      <div className="bg-blue-50 p-3 rounded-lg">
+                        <div className="flex items-center text-blue-800">
+                          <Clock className="w-4 h-4 mr-2" />
+                          <span className="font-medium">{getTempoEstimadoRestante(pedido)}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Informações do entregador */}
+                    {pedido.entregadores && pedido.status === 'saiu_para_entrega' && (
+                      <div className="bg-orange-50 p-3 rounded-lg">
+                        <div className="flex items-center text-orange-800">
+                          <Truck className="w-4 h-4 mr-2" />
+                          <span className="font-medium">
+                            Entregador: {pedido.entregadores.profiles.nome} • {pedido.entregadores.profiles.telefone || 'Sem telefone'}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Produtos */}
                     <div>
-                      <CardTitle className="text-lg">{pedido.restaurante.nome}</CardTitle>
-                      <p className="text-sm text-gray-500">Pedido #{pedido.id} • {pedido.data} às {pedido.hora}</p>
+                      <h4 className="font-medium mb-2">Produtos:</h4>
+                      <ul className="text-gray-600 space-y-1">
+                        {pedido.pedido_itens && pedido.pedido_itens.map((item: any, index: number) => (
+                          <li key={index} className="flex items-center justify-between">
+                            <div className="flex items-center">
+                              <Package className="w-4 h-4 mr-2" />
+                              {item.quantidade}x {item.produtos.nome}
+                            </div>
+                            <span>R$ {(parseFloat(item.preco_unitario) * item.quantidade).toFixed(2)}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <Badge className={getStatusBadge(pedido.status).color}>
-                      <div className="flex items-center space-x-1">
-                        {getStatusIcon(pedido.status)}
-                        <span>{getStatusBadge(pedido.status).label}</span>
+
+                    {/* Informações de Entrega */}
+                    <div className="grid md:grid-cols-2 gap-4 text-sm">
+                      <div className="flex items-center text-gray-600">
+                        <MapPin className="w-4 h-4 mr-2" />
+                        Entregar em: {pedido.endereco_entrega}
                       </div>
-                    </Badge>
-                    <span className="font-bold text-lg text-green-600">
-                      R$ {pedido.total.toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              </CardHeader>
-              
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Tempo estimado */}
-                  {getTempoEstimadoRestante(pedido) && (
-                    <div className="bg-blue-50 p-3 rounded-lg">
-                      <div className="flex items-center text-blue-800">
-                        <Clock className="w-4 h-4 mr-2" />
-                        <span className="font-medium">{getTempoEstimadoRestante(pedido)}</span>
+                      <div className="flex items-center text-gray-600">
+                        <MapPin className="w-4 h-4 mr-2" />
+                        Restaurante: {pedido.restaurantes?.endereco || 'Endereço não disponível'}
                       </div>
                     </div>
-                  )}
 
-                  {/* Informações do entregador */}
-                  {pedido.entregador && pedido.status === 'saiu_para_entrega' && (
-                    <div className="bg-orange-50 p-3 rounded-lg">
-                      <div className="flex items-center text-orange-800">
-                        <Truck className="w-4 h-4 mr-2" />
-                        <span className="font-medium">
-                          Entregador: {pedido.entregador.nome} • {pedido.entregador.telefone}
-                        </span>
-                      </div>
-                    </div>
-                  )}
+                    {/* Ações */}
+                    <div className="flex flex-wrap gap-3 pt-4">
+                      {pedido.status !== 'entregue' && pedido.status !== 'cancelado' && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleRastrear(pedido)}
+                        >
+                          {pedido.status === 'saiu_para_entrega' ? 'Rastrear em Tempo Real' : 'Ver Status'}
+                        </Button>
+                      )}
+                      
+                      {pedido.status === 'entregue' && !pedido.avaliado && (
+                        <Button 
+                          size="sm"
+                          className="bg-red-600 hover:bg-red-700"
+                          onClick={() => handleAvaliar(
+                            pedido.id, 
+                            pedido.restaurantes.nome, 
+                            pedido.entregadores?.profiles.nome
+                          )}
+                        >
+                          <Star className="w-4 h-4 mr-1" />
+                          Avaliar Pedido
+                        </Button>
+                      )}
 
-                  {/* Produtos */}
-                  <div>
-                    <h4 className="font-medium mb-2">Produtos:</h4>
-                    <ul className="text-gray-600 space-y-1">
-                      {pedido.itens.map((item, index) => (
-                        <li key={index} className="flex items-center justify-between">
-                          <div className="flex items-center">
-                            <Package className="w-4 h-4 mr-2" />
-                            {item.quantidade}x {item.nome}
-                          </div>
-                          <span>R$ {(item.preco * item.quantidade).toFixed(2)}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Informações de Entrega */}
-                  <div className="grid md:grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center text-gray-600">
-                      <MapPin className="w-4 h-4 mr-2" />
-                      Entregar em: {pedido.cliente.endereco}
-                    </div>
-                    <div className="flex items-center text-gray-600">
-                      <MapPin className="w-4 h-4 mr-2" />
-                      Restaurante: {pedido.restaurante.endereco}
-                    </div>
-                  </div>
-
-                  {/* Ações */}
-                  <div className="flex flex-wrap gap-3 pt-4">
-                    {pedido.status !== 'entregue' && pedido.status !== 'cancelado' && (
+                      {pedido.status === 'entregue' && pedido.avaliado && (
+                        <Badge className="bg-green-100 text-green-800">
+                          <Star className="w-4 h-4 mr-1" />
+                          Pedido Avaliado
+                        </Badge>
+                      )}
+                      
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => handleRastrear(pedido)}
+                        onClick={() => handlePedirNovamente(pedido.restaurantes.nome)}
                       >
-                        {pedido.status === 'saiu_para_entrega' ? 'Rastrear em Tempo Real' : 'Ver Status'}
+                        Pedir Novamente
                       </Button>
-                    )}
-                    
-                    {pedido.status === 'entregue' && !pedido.avaliado && (
-                      <Button 
-                        size="sm"
-                        className="bg-red-600 hover:bg-red-700"
-                        onClick={() => handleAvaliar(pedido.id, pedido.restaurante.nome, pedido.entregador?.nome)}
-                      >
-                        <Star className="w-4 h-4 mr-1" />
-                        Avaliar Pedido
-                      </Button>
-                    )}
-
-                    {pedido.status === 'entregue' && pedido.avaliado && (
-                      <Badge className="bg-green-100 text-green-800">
-                        <Star className="w-4 h-4 mr-1" />
-                        Pedido Avaliado
-                      </Badge>
-                    )}
-                    
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handlePedirNovamente(pedido.restaurante.nome)}
-                    >
-                      Pedir Novamente
-                    </Button>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
         {meusPedidos.length === 0 && (

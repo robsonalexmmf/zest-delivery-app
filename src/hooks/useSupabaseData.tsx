@@ -177,11 +177,14 @@ export function useSupabaseData() {
     }
   };
 
-  const updatePedidoStatus = async (pedidoId: string, status: string, entregadorId?: string) => {
+  const updatePedidoStatus = async (pedidoId: string, status: string, entregadorId?: string, avaliado?: boolean) => {
     try {
       const updateData: any = { status };
       if (entregadorId) {
         updateData.entregador_id = entregadorId;
+      }
+      if (avaliado !== undefined) {
+        updateData.avaliado = avaliado;
       }
 
       const { data, error } = await supabase
