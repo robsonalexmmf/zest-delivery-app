@@ -72,7 +72,7 @@ const DashboardRestaurante: React.FC = () => {
       try {
         const { profile } = JSON.parse(testUser);
         if (profile.tipo !== 'restaurante') {
-          navigate('/login');
+          navigate('/auth');
         } else {
           setUser(profile);
           carregarConfiguracoes();
@@ -89,13 +89,13 @@ const DashboardRestaurante: React.FC = () => {
     if (userData) {
       const parsedUser = JSON.parse(userData);
       if (parsedUser.tipo !== 'restaurante') {
-        navigate('/login');
+        navigate('/auth');
       } else {
         setUser(parsedUser);
         carregarConfiguracoes();
       }
     } else {
-      navigate('/login');
+      navigate('/auth');
     }
 
     // Escutar evento customizado para abrir configurações

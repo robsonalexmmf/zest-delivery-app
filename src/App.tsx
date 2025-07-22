@@ -8,7 +8,6 @@ import { AuthProvider } from "@/hooks/useAuth";
 
 // Páginas principais
 import HomePage from "./pages/HomePage";
-import LoginForm from "./components/Auth/LoginForm";
 import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
 
@@ -46,8 +45,8 @@ const App = () => (
             {/* Rotas Públicas */}
             <Route path="/" element={<HomePage />} />
             <Route path="/auth" element={<AuthPage />} />
-            <Route path="/login" element={<LoginForm />} />
-            <Route path="/cadastro" element={<LoginForm />} />
+            <Route path="/login" element={<AuthPage />} />
+            <Route path="/cadastro" element={<AuthPage />} />
             
             {/* Rotas do Cliente */}
             <Route path="/restaurantes" element={<RestaurantesPage />} />

@@ -22,7 +22,7 @@ const EntregasDisponiveisPage: React.FC = () => {
     if (testUser) {
       const parsedTestUser = JSON.parse(testUser);
       if (parsedTestUser.tipo !== 'entregador') {
-        navigate('/login');
+        navigate('/auth');
       } else {
         setUser(parsedTestUser);
       }
@@ -34,12 +34,12 @@ const EntregasDisponiveisPage: React.FC = () => {
     if (userData) {
       const parsedUser = JSON.parse(userData);
       if (parsedUser.tipo !== 'entregador') {
-        navigate('/login');
+        navigate('/auth');
       } else {
         setUser(parsedUser);
       }
     } else {
-      navigate('/login');
+      navigate('/auth');
     }
   }, [navigate]);
 

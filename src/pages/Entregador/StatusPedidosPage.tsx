@@ -20,7 +20,7 @@ const StatusPedidosPage: React.FC = () => {
       try {
         const { profile } = JSON.parse(testUser);
         if (profile.tipo !== 'entregador') {
-          navigate('/login');
+          navigate('/auth');
         } else {
           setUser(profile);
         }
@@ -28,10 +28,10 @@ const StatusPedidosPage: React.FC = () => {
       } catch (error) {
         console.error('Error loading test user:', error);
         localStorage.removeItem('zdelivery_test_user');
-        navigate('/login');
+        navigate('/auth');
       }
     } else {
-      navigate('/login');
+      navigate('/auth');
     }
   }, [navigate]);
 

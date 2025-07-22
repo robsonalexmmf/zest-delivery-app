@@ -58,7 +58,7 @@ const CarrinhoPage: React.FC = () => {
       try {
         const { profile } = JSON.parse(testUser);
         if (profile.tipo !== 'cliente') {
-          navigate('/login');
+          navigate('/auth');
         } else {
           setUser(profile);
           carregarEnderecoSalvo();
@@ -66,7 +66,7 @@ const CarrinhoPage: React.FC = () => {
       } catch (error) {
         console.error('Error loading test user:', error);
         localStorage.removeItem('zdelivery_test_user');
-        navigate('/login');
+        navigate('/auth');
       }
     } else {
       // Verificar usuário normal
@@ -74,13 +74,13 @@ const CarrinhoPage: React.FC = () => {
       if (userData) {
         const user = JSON.parse(userData);
         if (user.tipo !== 'cliente') {
-          navigate('/login');
+          navigate('/auth');
         } else {
           setUser(user);
           carregarEnderecoSalvo();
         }
       } else {
-        navigate('/login');
+        navigate('/auth');
       }
     }
 

@@ -132,7 +132,7 @@ const Header: React.FC<HeaderProps> = ({ userType, userName, cartCount = 0 }) =>
               </>
             ) : (
               <div className="flex items-center space-x-2">
-                <Button variant="ghost" onClick={() => navigate('/login')}>
+                <Button variant="ghost" onClick={() => navigate('/auth')}>
                   Entrar
                 </Button>
                 <Button onClick={() => navigate('/cadastro')} className="bg-red-600 hover:bg-red-700">

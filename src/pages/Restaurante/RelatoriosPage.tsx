@@ -18,7 +18,7 @@ const RelatoriosPage: React.FC = () => {
       try {
         const { profile } = JSON.parse(testUser);
         if (profile.tipo !== 'restaurante') {
-          navigate('/login');
+          navigate('/auth');
         } else {
           setUser(profile);
         }
@@ -34,12 +34,12 @@ const RelatoriosPage: React.FC = () => {
     if (userData) {
       const parsedUser = JSON.parse(userData);
       if (parsedUser.tipo !== 'restaurante') {
-        navigate('/login');
+        navigate('/auth');
       } else {
         setUser(parsedUser);
       }
     } else {
-      navigate('/login');
+      navigate('/auth');
     }
   }, [navigate]);
 

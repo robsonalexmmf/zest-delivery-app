@@ -33,7 +33,7 @@ const MeusPedidosPage: React.FC = () => {
   useEffect(() => {
   // Verificar se o usuário está autenticado e é cliente
     if (userProfile && userProfile.tipo !== 'cliente') {
-      navigate('/login');
+      navigate('/auth');
     }
 
     // Solicitar permissão para notificações

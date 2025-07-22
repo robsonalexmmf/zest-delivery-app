@@ -25,7 +25,7 @@ const DashboardEntregador: React.FC = () => {
       try {
         const { profile } = JSON.parse(testUser);
         if (profile.tipo !== 'entregador') {
-          navigate('/login');
+          navigate('/auth');
         } else {
           setUser(profile);
         }
@@ -41,12 +41,12 @@ const DashboardEntregador: React.FC = () => {
     if (userData) {
       const parsedUser = JSON.parse(userData);
       if (parsedUser.tipo !== 'entregador') {
-        navigate('/login');
+        navigate('/auth');
       } else {
         setUser(parsedUser);
       }
     } else {
-      navigate('/login');
+      navigate('/auth');
     }
   }, [navigate]);
 

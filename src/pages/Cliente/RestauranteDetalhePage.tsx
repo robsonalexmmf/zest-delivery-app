@@ -22,7 +22,7 @@ const RestauranteDetalhePage: React.FC = () => {
     if (userData) {
       setUser(JSON.parse(userData));
     } else {
-      navigate('/login');
+      navigate('/auth');
     }
 
     // Buscar restaurante pelo ID
