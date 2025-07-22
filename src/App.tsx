@@ -9,6 +9,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 // Páginas principais
 import HomePage from "./pages/HomePage";
 import LoginForm from "./components/Auth/LoginForm";
+import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
 
 // Páginas do Cliente
@@ -44,6 +45,7 @@ const App = () => (
           <Routes>
             {/* Rotas Públicas */}
             <Route path="/" element={<HomePage />} />
+            <Route path="/auth" element={<AuthPage />} />
             <Route path="/login" element={<LoginForm />} />
             <Route path="/cadastro" element={<LoginForm />} />
             

@@ -9,9 +9,11 @@ import { Truck, Store, Users, ShoppingCart, Check, Copy } from 'lucide-react';
 import { pagamentoService } from '@/services/pagamentoService';
 import { useToast } from '@/hooks/use-toast';
 import Logo from '@/components/common/Logo';
+import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 
 const HomePage: React.FC = () => {
   const { toast } = useToast();
+  const { user, signOut } = useSupabaseAuth();
   const [showPixModal, setShowPixModal] = useState(false);
   const [pixCode, setPixCode] = useState('');
   const [currentPayment, setCurrentPayment] = useState<any>(null);
@@ -73,16 +75,35 @@ const HomePage: React.FC = () => {
           <div className="flex items-center justify-between">
             <Logo />
             <div className="space-x-4">
-              <Link to="/login">
-                <Button variant="ghost" className="text-white hover:bg-red-700 hover:text-white border-transparent">
-                  Login
-                </Button>
-              </Link>
-              <Link to="/cadastro">
-                <Button className="bg-white text-red-600 hover:bg-gray-100 hover:text-red-700 border-white">
-                  Cadastrar
-                </Button>
-              </Link>
+              {user ? (
+                <>
+                  <Link to="/restaurantes">
+                    <Button variant="ghost" className="text-white hover:bg-red-700 hover:text-white border-transparent">
+                      Plataforma
+                    </Button>
+                  </Link>
+                  <Button 
+                    onClick={signOut}
+                    variant="ghost" 
+                    className="text-white hover:bg-red-700 hover:text-white border-transparent"
+                  >
+                    Sair
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Link to="/auth">
+                    <Button variant="ghost" className="text-white hover:bg-red-700 hover:text-white border-transparent">
+                      Login
+                    </Button>
+                  </Link>
+                  <Link to="/login">
+                    <Button className="bg-white text-red-600 hover:bg-gray-100 hover:text-red-700 border-white">
+                      Teste Rápido
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -97,11 +118,19 @@ const HomePage: React.FC = () => {
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
             Conectamos você aos melhores restaurantes da cidade. Peça com facilidade e receba em casa rapidinho!
           </p>
-          <Link to="/login">
-            <Button size="lg" className="bg-red-600 hover:bg-red-700 text-white text-lg px-8 py-3">
-              Começar Agora
-            </Button>
-          </Link>
+          {user ? (
+            <Link to="/restaurantes">
+              <Button size="lg" className="bg-red-600 hover:bg-red-700 text-white text-lg px-8 py-3">
+                Ir para Plataforma
+              </Button>
+            </Link>
+          ) : (
+            <Link to="/auth">
+              <Button size="lg" className="bg-red-600 hover:bg-red-700 text-white text-lg px-8 py-3">
+                Começar Agora
+              </Button>
+            </Link>
+          )}
         </div>
       </section>
 
@@ -333,16 +362,26 @@ const HomePage: React.FC = () => {
             Junte-se a milhares de usuários que já usam o Z Delivery
           </p>
           <div className="space-x-4">
-            <Link to="/login">
-              <Button size="lg" className="bg-white text-red-600 hover:bg-gray-100 hover:text-red-700 border-white">
-                Fazer Login
-              </Button>
-            </Link>
-            <Link to="/cadastro">
-              <Button size="lg" className="bg-red-800 text-white hover:bg-red-900 border-red-800">
-                Criar Conta
-              </Button>
-            </Link>
+            {user ? (
+              <Link to="/restaurantes">
+                <Button size="lg" className="bg-white text-red-600 hover:bg-gray-100 hover:text-red-700 border-white">
+                  Ir para Plataforma
+                </Button>
+              </Link>
+            ) : (
+              <>
+                <Link to="/auth">
+                  <Button size="lg" className="bg-white text-red-600 hover:bg-gray-100 hover:text-red-700 border-white">
+                    Fazer Login
+                  </Button>
+                </Link>
+                <Link to="/auth">
+                  <Button size="lg" className="bg-red-800 text-white hover:bg-red-900 border-red-800">
+                    Criar Conta
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </section>
