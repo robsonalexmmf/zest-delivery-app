@@ -91,7 +91,41 @@ const AuthPage: React.FC = () => {
 
     setIsLoading(true);
     try {
-      await signIn(loginData.email, loginData.password);
+      // Primeiro tenta fazer login
+      const { error } = await signIn(loginData.email, loginData.password);
+      
+      // Se der erro de credenciais inválidas e for um dos usuários de teste, cria automaticamente
+      if (error && error.message.includes('Invalid login credentials')) {
+        const testUsers = {
+          'cliente@test.com': { tipo: 'cliente', nome: 'Cliente Teste' },
+          'restaurante@test.com': { tipo: 'restaurante', nome: 'Restaurante Teste' },
+          'entregador@test.com': { tipo: 'entregador', nome: 'Entregador Teste' },
+          'admin@test.com': { tipo: 'admin', nome: 'Administrador do Sistema' }
+        };
+        
+        const testUser = testUsers[loginData.email as keyof typeof testUsers];
+        if (testUser) {
+          toast({
+            title: 'Criando usuário de teste...',
+            description: 'Aguarde um momento.',
+          });
+          
+          // Criar o usuário de teste
+          const { error: signUpError } = await signUp(loginData.email, loginData.password, testUser);
+          
+          if (!signUpError) {
+            toast({
+              title: 'Usuário criado com sucesso!',
+              description: 'Fazendo login automaticamente...',
+            });
+            
+            // Tentar login novamente após criar
+            setTimeout(async () => {
+              await signIn(loginData.email, loginData.password);
+            }, 1000);
+          }
+        }
+      }
     } finally {
       setIsLoading(false);
     }
