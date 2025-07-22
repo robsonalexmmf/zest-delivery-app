@@ -112,7 +112,7 @@ export const produtos = [
     descricao: "Molho de tomate, mussarela, fatias de tomate fresco, anchovas, azeitonas pretas e orégano", 
     preco: 44.90, 
     categoria: "Pizzas Clássicas", 
-    imagem: "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80", 
+    imagem: "/src/assets/pizza-napolitana.jpg", 
     disponivel: true 
   },
   { 
@@ -290,7 +290,7 @@ export const produtos = [
     descricao: "Água mineral natural gelada para acompanhar sua refeição", 
     preco: 4.50, 
     categoria: "Bebidas", 
-    imagem: "https://images.unsplash.com/photo-1559827260-dc66d52bef19?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80", 
+    imagem: "/src/assets/agua-mineral.jpg", 
     disponivel: true 
   },
   { 
@@ -312,7 +312,7 @@ export const produtos = [
     descricao: "Pão italiano tostado com tomate, manjericão, alho e azeite extravirgem (4 unidades)", 
     preco: 18.90, 
     categoria: "Entradas", 
-    imagem: "https://images.unsplash.com/photo-1572441713132-51c75654db73?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80", 
+    imagem: "/src/assets/bruschetta-italiana.jpg", 
     disponivel: true 
   },
   { 
@@ -342,7 +342,7 @@ export const produtos = [
     descricao: "Pão francês recheado com alho, ervas finas, manteiga e queijo gratinado", 
     preco: 16.90, 
     categoria: "Entradas", 
-    imagem: "https://images.unsplash.com/photo-1549107434-8c4c50fb2b24?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80", 
+    imagem: "/src/assets/pao-alho-especial.jpg", 
     disponivel: true 
   },
 

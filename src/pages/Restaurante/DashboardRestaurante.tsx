@@ -17,6 +17,7 @@ import StatisticsChart from '@/components/common/StatisticsChart';
 import ConfiguracoesAvancadas from '@/components/Restaurante/ConfiguracoesAvancadas';
 import AvaliacoesRestaurante from '@/components/Restaurante/AvaliacoesRestaurante';
 import ImageUpload from '@/components/common/ImageUpload';
+import { useSupabaseSync } from '@/hooks/useSupabaseSync';
 
 const DashboardRestaurante: React.FC = () => {
   const [user, setUser] = useState<any>(null);
@@ -62,6 +63,7 @@ const DashboardRestaurante: React.FC = () => {
   });
   
   const navigate = useNavigate();
+  const { isSyncing, syncStatus } = useSupabaseSync();
 
   useEffect(() => {
     // Verificar se é usuário de teste primeiro

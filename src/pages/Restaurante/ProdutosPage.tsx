@@ -13,6 +13,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Edit, Trash2, Package, Settings, ImageIcon } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import ImageUpload from '@/components/common/ImageUpload';
+import { useSupabaseSync } from '@/hooks/useSupabaseSync';
+import pizzaNapolitanaImg from '@/assets/pizza-napolitana.jpg';
+import aguaMineralImg from '@/assets/agua-mineral.jpg';
+import bruschettalItalianaImg from '@/assets/bruschetta-italiana.jpg';
+import paoAlhoEspecialImg from '@/assets/pao-alho-especial.jpg';
 
 const ProdutosPage: React.FC = () => {
   const [user, setUser] = useState<any>(null);
@@ -22,6 +27,7 @@ const ProdutosPage: React.FC = () => {
   const [showAdicionaisDialog, setShowAdicionaisDialog] = useState(false);
   const [produtoAdicionais, setProdutoAdicionais] = useState<any>(null);
   const navigate = useNavigate();
+  const { isSyncing } = useSupabaseSync();
 
   useEffect(() => {
     // Verificar se é usuário de teste primeiro
@@ -143,7 +149,7 @@ const ProdutosPage: React.FC = () => {
           preco: 44.90,
           categoria: 'Pizzas',
           disponivel: true,
-          imagem: '/placeholder.svg',
+          imagem: pizzaNapolitanaImg,
           adicionais: []
         },
         {
@@ -168,32 +174,32 @@ const ProdutosPage: React.FC = () => {
         },
         {
           id: '8',
-          nome: 'Antipasto da Casa',
-          descricao: 'Mix de queijos, embutidos e azeitonas',
-          preco: 32.90,
+          nome: 'Bruschetta Italiana',
+          descricao: 'Pão italiano tostado com tomate, manjericão, alho e azeite extravirgem',
+          preco: 18.90,
           categoria: 'Entradas',
           disponivel: true,
-          imagem: '/placeholder.svg',
+          imagem: bruschettalItalianaImg,
           adicionais: []
         },
         {
           id: '9',
-          nome: 'Bolinho de Queijo (8 unid)',
-          descricao: 'Deliciosos bolinhos de queijo crocantes',
-          preco: 22.90,
+          nome: 'Pão de Alho Especial',
+          descricao: 'Pão francês recheado com alho, ervas finas, manteiga e queijo gratinado',
+          preco: 16.90,
           categoria: 'Entradas',
           disponivel: true,
-          imagem: '/placeholder.svg',
+          imagem: paoAlhoEspecialImg,
           adicionais: []
         },
         {
           id: '10',
-          nome: 'Cerveja Long Neck',
-          descricao: 'Cerveja gelada 330ml',
-          preco: 12.90,
+          nome: 'Água Mineral 500ml',
+          descricao: 'Água mineral natural gelada para acompanhar sua refeição',
+          preco: 4.50,
           categoria: 'Bebidas',
           disponivel: true,
-          imagem: '/placeholder.svg',
+          imagem: aguaMineralImg,
           adicionais: []
         },
         {
