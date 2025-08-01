@@ -9,11 +9,11 @@ import { Truck, Store, Users, ShoppingCart, Check, Copy } from 'lucide-react';
 import { pagamentoService } from '@/services/pagamentoService';
 import { useToast } from '@/hooks/use-toast';
 import Logo from '@/components/common/Logo';
-import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
+import { useAuth } from '@/hooks/useAuth';
 
 const HomePage: React.FC = () => {
   const { toast } = useToast();
-  const { user, signOut } = useSupabaseAuth();
+  const { user, signOut } = useAuth();
   const [showPixModal, setShowPixModal] = useState(false);
   const [pixCode, setPixCode] = useState('');
   const [currentPayment, setCurrentPayment] = useState<any>(null);
@@ -97,7 +97,7 @@ const HomePage: React.FC = () => {
                       Login
                     </Button>
                   </Link>
-                  <Link to="/login">
+                  <Link to="/auth">
                     <Button className="bg-white text-red-600 hover:bg-gray-100 hover:text-red-700 border-white">
                       Teste Rápido
                     </Button>
