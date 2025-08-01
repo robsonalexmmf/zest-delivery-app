@@ -17,11 +17,13 @@ import StatisticsChart from '@/components/common/StatisticsChart';
 import ConfiguracoesAvancadas from '@/components/Restaurante/ConfiguracoesAvancadas';
 import AvaliacoesRestaurante from '@/components/Restaurante/AvaliacoesRestaurante';
 import ImageUpload from '@/components/common/ImageUpload';
-import { useSupabaseSync } from '@/hooks/useSupabaseSync';
+import { useAuth } from '@/hooks/useAuth';
+import { pedidosService, Pedido } from '@/services/pedidosService';
 
 const DashboardRestaurante: React.FC = () => {
-  const [user, setUser] = useState<any>(null);
+  const { user, profile, loading } = useAuth();
   const [showConfigDialog, setShowConfigDialog] = useState(false);
+  const [pedidosRecentes, setPedidosRecentes] = useState<Pedido[]>([]);
   const [configuracoes, setConfiguracoes] = useState({
     nome: '',
     categoria: '',
@@ -63,39 +65,16 @@ const DashboardRestaurante: React.FC = () => {
   });
   
   const navigate = useNavigate();
-  const { isSyncing, syncStatus } = useSupabaseSync();
 
   useEffect(() => {
-    // Verificar se é usuário de teste primeiro
-    const testUser = localStorage.getItem('zdelivery_test_user');
-    if (testUser) {
-      try {
-        const { profile } = JSON.parse(testUser);
-        if (profile.tipo !== 'restaurante') {
-          navigate('/auth');
-        } else {
-          setUser(profile);
-          carregarConfiguracoes();
-        }
-        return;
-      } catch (error) {
-        console.error('Error loading test user:', error);
-        localStorage.removeItem('zdelivery_test_user');
-      }
-    }
-
-    // Verificar usuário normal
-    const userData = localStorage.getItem('zdelivery_user');
-    if (userData) {
-      const parsedUser = JSON.parse(userData);
-      if (parsedUser.tipo !== 'restaurante') {
+    if (!loading) {
+      if (!user || !profile) {
+        navigate('/auth');
+      } else if (profile.tipo !== 'restaurante') {
         navigate('/auth');
       } else {
-        setUser(parsedUser);
         carregarConfiguracoes();
       }
-    } else {
-      navigate('/auth');
     }
 
     // Escutar evento customizado para abrir configurações
@@ -108,7 +87,19 @@ const DashboardRestaurante: React.FC = () => {
     return () => {
       window.removeEventListener('openRestaurantConfig', handleOpenConfig);
     };
-  }, [navigate]);
+  }, [user, profile, loading, navigate]);
+
+  useEffect(() => {
+    if (!user || !profile) return;
+
+    const unsubscribe = pedidosService.subscribe((pedidos) => {
+      // Filtrar pedidos do restaurante atual
+      const pedidosRestaurante = pedidos.filter(p => p.restaurante.nome === profile.nome);
+      setPedidosRecentes(pedidosRestaurante.slice(0, 5)); // Mostrar apenas os 5 mais recentes
+    });
+
+    return unsubscribe;
+  }, [user, profile]);
 
   const carregarConfiguracoes = () => {
     const configSalvas = localStorage.getItem('restaurant_config');
@@ -179,10 +170,6 @@ const DashboardRestaurante: React.FC = () => {
     setConfiguracoes(configParaSalvar);
     localStorage.setItem('restaurant_config', JSON.stringify(configParaSalvar));
     
-    const updatedUser = { ...user, ...configParaSalvar };
-    setUser(updatedUser);
-    localStorage.setItem('zdelivery_user', JSON.stringify(updatedUser));
-    
     toast({
       title: 'Configurações salvas!',
       description: 'As configurações do restaurante foram atualizadas.',
@@ -218,11 +205,11 @@ const DashboardRestaurante: React.FC = () => {
     }, 2000);
   };
 
-  if (!user) return null;
+  if (loading || !user || !profile) return null;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header userType="restaurante" userName={user.nome} />
+      <Header userType="restaurante" userName={profile.nome} />
       
       <main className="container mx-auto px-4 py-8">
         {/* Header do Dashboard */}
@@ -230,7 +217,7 @@ const DashboardRestaurante: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-800 mb-2">
-                Dashboard - {user.nome}
+                Dashboard - {profile.nome}
               </h1>
               <p className="text-gray-600">
                 Gerencie seu restaurante e acompanhe o desempenho
@@ -435,22 +422,58 @@ const DashboardRestaurante: React.FC = () => {
                 <CardTitle>Pedidos Recentes</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8">
-                  <Bell className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">Vá para a página de pedidos para gerenciar</p>
-                  <Button 
-                    onClick={() => navigate('/pedidos-restaurante')}
-                    className="mt-4 bg-red-600 hover:bg-red-700"
-                  >
-                    Ver Todos os Pedidos
-                  </Button>
-                </div>
+                {pedidosRecentes.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Bell className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500">Nenhum pedido encontrado</p>
+                    <Button 
+                      onClick={() => navigate('/pedidos-restaurante')}
+                      className="mt-4 bg-red-600 hover:bg-red-700"
+                    >
+                      Ver Todos os Pedidos
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {pedidosRecentes.map(pedido => (
+                      <div key={pedido.id} className="border rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <h4 className="font-semibold">Pedido #{pedido.id.slice(0, 8)}</h4>
+                            <p className="text-sm text-gray-600">Cliente: {pedido.cliente.nome}</p>
+                          </div>
+                          <div className="text-right">
+                            <Badge className={
+                              pedido.status === 'entregue' ? 'bg-green-100 text-green-800' :
+                              pedido.status === 'pendente' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-blue-100 text-blue-800'
+                            }>
+                              {pedido.status}
+                            </Badge>
+                            <p className="text-lg font-bold text-green-600 mt-1">
+                              R$ {pedido.total.toFixed(2)}
+                            </p>
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-500">
+                          {pedido.data} às {pedido.hora} • {pedido.itens.length} itens
+                        </p>
+                      </div>
+                    ))}
+                    <Button 
+                      onClick={() => navigate('/pedidos-restaurante')}
+                      className="w-full mt-4 bg-red-600 hover:bg-red-700"
+                    >
+                      Ver Todos os Pedidos
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="avaliacoes">
-            <AvaliacoesRestaurante restauranteNome={user.nome} />
+            <AvaliacoesRestaurante restauranteNome={profile.nome} />
           </TabsContent>
 
           <TabsContent value="relatorios">

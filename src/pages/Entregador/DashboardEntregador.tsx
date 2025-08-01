@@ -10,52 +10,31 @@ import { toast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AvaliacoesEntregador from '@/components/Entregador/AvaliacoesEntregador';
 import { pedidosService, Pedido } from '@/services/pedidosService';
+import { useAuth } from '@/hooks/useAuth';
 
 const DashboardEntregador: React.FC = () => {
-  const [user, setUser] = useState<any>(null);
+  const { user, profile, loading } = useAuth();
   const [disponivel, setDisponivel] = useState(true);
   const [entregasAndamento, setEntregasAndamento] = useState<Pedido[]>([]);
   const [entregasDisponiveis, setEntregasDisponiveis] = useState<Pedido[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Verificar se é usuário de teste primeiro
-    const testUser = localStorage.getItem('zdelivery_test_user');
-    if (testUser) {
-      try {
-        const { profile } = JSON.parse(testUser);
-        if (profile.tipo !== 'entregador') {
-          navigate('/auth');
-        } else {
-          setUser(profile);
-        }
-        return;
-      } catch (error) {
-        console.error('Error loading test user:', error);
-        localStorage.removeItem('zdelivery_test_user');
-      }
-    }
-
-    // Verificar usuário normal
-    const userData = localStorage.getItem('zdelivery_user');
-    if (userData) {
-      const parsedUser = JSON.parse(userData);
-      if (parsedUser.tipo !== 'entregador') {
+    if (!loading) {
+      if (!user || !profile) {
         navigate('/auth');
-      } else {
-        setUser(parsedUser);
+      } else if (profile.tipo !== 'entregador') {
+        navigate('/auth');
       }
-    } else {
-      navigate('/auth');
     }
-  }, [navigate]);
+  }, [user, profile, loading, navigate]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !profile) return;
 
     const unsubscribe = pedidosService.subscribe((pedidos) => {
       // Pedidos em andamento do entregador atual
-      const andamento = pedidosService.getPedidosDoEntregador(user.nome);
+      const andamento = pedidosService.getPedidosDoEntregador(profile.nome);
       setEntregasAndamento(andamento);
 
       // Pedidos disponíveis (prontos para entrega)
@@ -64,7 +43,7 @@ const DashboardEntregador: React.FC = () => {
     });
 
     return unsubscribe;
-  }, [user]);
+  }, [user, profile]);
 
   // Dados mockados para demonstração
   const estatisticas = {
@@ -85,8 +64,8 @@ const DashboardEntregador: React.FC = () => {
 
   const handleAceitarEntrega = (pedidoId: string) => {
     const sucesso = pedidosService.aceitarEntrega(pedidoId, {
-      nome: user.nome,
-      telefone: user.telefone || '(11) 99999-9999'
+      nome: profile.nome,
+      telefone: profile.telefone || '(11) 99999-9999'
     });
 
     if (sucesso) {
@@ -121,18 +100,18 @@ const DashboardEntregador: React.FC = () => {
     window.open(`https://maps.google.com/?q=${enderecoEncoded}`, '_blank');
   };
 
-  if (!user) return null;
+  if (loading || !user || !profile) return null;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header userType="entregador" userName={user.nome} />
+      <Header userType="entregador" userName={profile.nome} />
       
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-800 mb-2">
-                Dashboard - {user.nome}
+                Dashboard - {profile.nome}
               </h1>
               <p className="text-gray-600">
                 Gerencie suas entregas e acompanhe seus ganhos
@@ -437,7 +416,7 @@ const DashboardEntregador: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="avaliacoes">
-            <AvaliacoesEntregador entregadorNome={user.nome} />
+            <AvaliacoesEntregador entregadorNome={profile.nome} />
           </TabsContent>
         </Tabs>
       </main>

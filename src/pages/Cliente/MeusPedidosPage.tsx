@@ -7,8 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Clock, MapPin, Star, Package, Truck, Bell } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { useSupabaseData } from '@/hooks/useSupabaseData';
-import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
+import { useAuth } from '@/hooks/useAuth';
+import { pedidosService, Pedido } from '@/services/pedidosService';
 
 interface PedidoItem {
   quantidade: number;
@@ -17,30 +17,42 @@ interface PedidoItem {
 }
 
 const MeusPedidosPage: React.FC = () => {
-  const { user } = useSupabaseAuth();
-  const { pedidos, userProfile } = useSupabaseData();
+  const { user, profile, loading } = useAuth();
   const [modalAvaliacao, setModalAvaliacao] = useState({ 
     isOpen: false, 
     pedidoId: '', 
     restaurante: '', 
     entregador: '' 
   });
+  const [meusPedidos, setMeusPedidos] = useState<Pedido[]>([]);
   const navigate = useNavigate();
 
-  // Filtrar pedidos para mostrar apenas os do cliente atual
-  const meusPedidos = user ? pedidos.filter(p => p.cliente_id === user.id) : [];
+  useEffect(() => {
+    if (!loading) {
+      if (!user || !profile) {
+        navigate('/auth');
+      } else if (profile.tipo !== 'cliente') {
+        navigate('/auth');
+      }
+    }
+  }, [user, profile, loading, navigate]);
 
   useEffect(() => {
-  // Verificar se o usuário está autenticado e é cliente
-    if (userProfile && userProfile.tipo !== 'cliente') {
-      navigate('/auth');
-    }
+    if (!user || !profile) return;
+
+    const unsubscribe = pedidosService.subscribe((pedidos) => {
+      // Filtrar pedidos para mostrar apenas os do cliente atual
+      const pedidosCliente = pedidos.filter(p => p.cliente.nome === profile.nome);
+      setMeusPedidos(pedidosCliente);
+    });
 
     // Solicitar permissão para notificações
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
-  }, [user, navigate]);
+
+    return unsubscribe;
+  }, [user, profile]);
 
   const getStatusBadge = (status: string) => {
     const statusMap = {
@@ -97,10 +109,10 @@ const MeusPedidosPage: React.FC = () => {
     });
   };
 
-  const handleRastrear = (pedido: any) => {
-    if (pedido.status === 'saiu_para_entrega' && pedido.entregadores) {
-      const entregadorNome = pedido.entregadores.profiles.nome;
-      const entregadorTelefone = pedido.entregadores.profiles.telefone || 'não disponível';
+  const handleRastrear = (pedido: Pedido) => {
+    if (pedido.status === 'saiu_para_entrega' && pedido.entregador) {
+      const entregadorNome = pedido.entregador.nome;
+      const entregadorTelefone = pedido.entregador.telefone || 'não disponível';
       
       toast({
         title: 'Rastreamento em Tempo Real',
@@ -108,9 +120,9 @@ const MeusPedidosPage: React.FC = () => {
       });
       
       // Abrir Google Maps com rota do restaurante ao cliente
-      if (pedido.restaurantes.endereco && pedido.profiles.endereco) {
-        const origem = encodeURIComponent(pedido.restaurantes.endereco);
-        const destino = encodeURIComponent(pedido.profiles.endereco);
+      if (pedido.restaurante.endereco && pedido.cliente.endereco) {
+        const origem = encodeURIComponent(pedido.restaurante.endereco);
+        const destino = encodeURIComponent(pedido.cliente.endereco);
         window.open(`https://www.google.com/maps/dir/${origem}/${destino}`, '_blank');
       } else {
         toast({
@@ -137,17 +149,17 @@ const MeusPedidosPage: React.FC = () => {
     navigate(`/restaurante/${restauranteSlug}`);
   };
 
-  const getTempoEstimadoRestante = (pedido: any) => {
+  const getTempoEstimadoRestante = (pedido: Pedido) => {
     if (pedido.status === 'entregue' || pedido.status === 'cancelado') {
       return null;
     }
     
     // Lógica simples para estimar tempo restante
     const agora = new Date();
-    const horaInicial = new Date(pedido.created_at);
+    const horaInicial = new Date(`${pedido.data} ${pedido.hora}`);
     const tempoDecorrido = Math.floor((agora.getTime() - horaInicial.getTime()) / (1000 * 60));
     
-    const tempoEstimadoTexto = pedido.tempo_estimado || '30 min';
+    const tempoEstimadoTexto = pedido.tempoEstimado || '30 min';
     const tempoEstimadoMinutos = parseInt(tempoEstimadoTexto);
     const tempoRestante = tempoEstimadoMinutos - tempoDecorrido;
     
@@ -157,19 +169,16 @@ const MeusPedidosPage: React.FC = () => {
     return 'Deveria chegar a qualquer momento';
   };
 
-  const formatarData = (dataStr: string) => {
-    const data = new Date(dataStr);
-    return {
-      data: data.toLocaleDateString('pt-BR'),
-      hora: data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-    };
+  const formatarData = (dataHora: string) => {
+    const [data, hora] = dataHora.split(' ');
+    return { data, hora };
   };
 
-  if (!user) return null;
+  if (loading || !user || !profile) return null;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header userType="cliente" userName={userProfile?.nome || ''} cartCount={0} />
+      <Header userType="cliente" userName={profile?.nome || ''} cartCount={0} />
       
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
@@ -201,8 +210,8 @@ const MeusPedidosPage: React.FC = () => {
           </Card>
           <Card>
             <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-blue-600">
-                R$ {meusPedidos.reduce((total, p) => total + parseFloat(p.total), 0).toFixed(2)}
+                     <div className="text-2xl font-bold text-blue-600">
+                R$ {meusPedidos.reduce((total, p) => total + p.total, 0).toFixed(2)}
               </div>
               <p className="text-sm text-gray-600">Total gasto</p>
             </CardContent>
@@ -220,14 +229,14 @@ const MeusPedidosPage: React.FC = () => {
         {/* Lista de Pedidos */}
         <div className="space-y-6">
           {meusPedidos.map(pedido => {
-            const { data, hora } = formatarData(pedido.created_at);
+            const { data, hora } = formatarData(`${pedido.data} ${pedido.hora}`);
             return (
               <Card key={pedido.id} className="overflow-hidden">
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                       <div>
-                        <CardTitle className="text-lg">{pedido.restaurantes?.nome}</CardTitle>
+                        <CardTitle className="text-lg">{pedido.restaurante.nome}</CardTitle>
                         <p className="text-sm text-gray-500">Pedido #{pedido.id.slice(0, 8)} • {data} às {hora}</p>
                       </div>
                     </div>
@@ -239,7 +248,7 @@ const MeusPedidosPage: React.FC = () => {
                         </div>
                       </Badge>
                       <span className="font-bold text-lg text-green-600">
-                        R$ {parseFloat(pedido.total).toFixed(2)}
+                        R$ {pedido.total.toFixed(2)}
                       </span>
                     </div>
                   </div>
@@ -258,12 +267,12 @@ const MeusPedidosPage: React.FC = () => {
                     )}
 
                     {/* Informações do entregador */}
-                    {pedido.entregadores && pedido.status === 'saiu_para_entrega' && (
+                    {pedido.entregador && pedido.status === 'saiu_para_entrega' && (
                       <div className="bg-orange-50 p-3 rounded-lg">
                         <div className="flex items-center text-orange-800">
                           <Truck className="w-4 h-4 mr-2" />
                           <span className="font-medium">
-                            Entregador: {pedido.entregadores.profiles.nome} • {pedido.entregadores.profiles.telefone || 'Sem telefone'}
+                            Entregador: {pedido.entregador.nome} • {pedido.entregador.telefone || 'Sem telefone'}
                           </span>
                         </div>
                       </div>
@@ -273,13 +282,13 @@ const MeusPedidosPage: React.FC = () => {
                     <div>
                       <h4 className="font-medium mb-2">Produtos:</h4>
                       <ul className="text-gray-600 space-y-1">
-                        {pedido.pedido_itens && pedido.pedido_itens.map((item: any, index: number) => (
+                        {pedido.itens.map((item, index) => (
                           <li key={index} className="flex items-center justify-between">
                             <div className="flex items-center">
                               <Package className="w-4 h-4 mr-2" />
-                              {item.quantidade}x {item.produtos.nome}
+                              {item.quantidade}x {item.nome}
                             </div>
-                            <span>R$ {(parseFloat(item.preco_unitario) * item.quantidade).toFixed(2)}</span>
+                            <span>R$ {(item.preco * item.quantidade).toFixed(2)}</span>
                           </li>
                         ))}
                       </ul>
@@ -289,11 +298,11 @@ const MeusPedidosPage: React.FC = () => {
                     <div className="grid md:grid-cols-2 gap-4 text-sm">
                       <div className="flex items-center text-gray-600">
                         <MapPin className="w-4 h-4 mr-2" />
-                        Entregar em: {pedido.endereco_entrega}
+                        Entregar em: {pedido.cliente.endereco}
                       </div>
                       <div className="flex items-center text-gray-600">
                         <MapPin className="w-4 h-4 mr-2" />
-                        Restaurante: {pedido.restaurantes?.endereco || 'Endereço não disponível'}
+                        Restaurante: {pedido.restaurante.endereco || 'Endereço não disponível'}
                       </div>
                     </div>
 
@@ -315,8 +324,8 @@ const MeusPedidosPage: React.FC = () => {
                           className="bg-red-600 hover:bg-red-700"
                           onClick={() => handleAvaliar(
                             pedido.id, 
-                            pedido.restaurantes.nome, 
-                            pedido.entregadores?.profiles.nome
+                            pedido.restaurante.nome, 
+                            pedido.entregador?.nome
                           )}
                         >
                           <Star className="w-4 h-4 mr-1" />
@@ -334,7 +343,7 @@ const MeusPedidosPage: React.FC = () => {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => handlePedirNovamente(pedido.restaurantes.nome)}
+                        onClick={() => handlePedirNovamente(pedido.restaurante.nome)}
                       >
                         Pedir Novamente
                       </Button>
