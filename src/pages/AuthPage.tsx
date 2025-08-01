@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import Logo from '@/components/common/Logo';
 import { supabase } from '@/integrations/supabase/client';
@@ -35,51 +35,28 @@ const AuthPage: React.FC = () => {
     placa: ''
   });
 
-  const { user, signIn, signUp } = useSupabaseAuth();
+  const { user, profile, signIn, signUp } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user) {
-      // Aguardar um pouco para garantir que o perfil foi carregado
-      const redirectToCorrectDashboard = async () => {
-        try {
-          await new Promise(resolve => setTimeout(resolve, 500)); // Aguardar 500ms
-          
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('tipo')
-            .eq('id', user.id)
-            .maybeSingle();
-          
-          if (profile) {
-            switch(profile.tipo) {
-              case 'admin':
-                navigate('/dashboard-admin');
-                break;
-              case 'restaurante':
-                navigate('/dashboard-restaurante');
-                break;
-              case 'entregador':
-                navigate('/dashboard-entregador');
-                break;
-              case 'cliente':
-              default:
-                navigate('/restaurantes');
-                break;
-            }
-          } else {
-            // Se não encontrou perfil, ir para página inicial
-            navigate('/');
-          }
-        } catch (error) {
-          console.error('Erro ao buscar perfil:', error);
-          navigate('/');
-        }
-      };
-      
-      redirectToCorrectDashboard();
+    if (user && profile) {
+      switch(profile.tipo) {
+        case 'admin':
+          navigate('/dashboard-admin');
+          break;
+        case 'restaurante':
+          navigate('/dashboard-restaurante');
+          break;
+        case 'entregador':
+          navigate('/dashboard-entregador');
+          break;
+        case 'cliente':
+        default:
+          navigate('/restaurantes');
+          break;
+      }
     }
-  }, [user, navigate]);
+  }, [user, profile, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,41 +71,13 @@ const AuthPage: React.FC = () => {
 
     setIsLoading(true);
     try {
-      // Primeiro tenta fazer login
-      const { error } = await signIn(loginData.email, loginData.password);
-      
-      // Se der erro de credenciais inválidas e for um dos usuários de teste, cria automaticamente
-      if (error && error.message.includes('Invalid login credentials')) {
-        const testUsers = {
-          'cliente@test.com': { tipo: 'cliente', nome: 'Cliente Teste' },
-          'restaurante@test.com': { tipo: 'restaurante', nome: 'Restaurante Teste' },
-          'entregador@test.com': { tipo: 'entregador', nome: 'Entregador Teste' },
-          'admin@test.com': { tipo: 'admin', nome: 'Administrador do Sistema' }
-        };
-        
-        const testUser = testUsers[loginData.email as keyof typeof testUsers];
-        if (testUser) {
-          toast({
-            title: 'Criando usuário de teste...',
-            description: 'Aguarde um momento.',
-          });
-          
-          // Criar o usuário de teste
-          const { error: signUpError } = await signUp(loginData.email, loginData.password, testUser);
-          
-          if (!signUpError) {
-            toast({
-              title: 'Usuário criado com sucesso!',
-              description: 'Fazendo login automaticamente...',
-            });
-            
-            // Tentar login novamente após criar
-            setTimeout(async () => {
-              await signIn(loginData.email, loginData.password);
-            }, 1000);
-          }
-        }
-      }
+      await signIn(loginData.email, loginData.password);
+    } catch (error: any) {
+      toast({
+        title: 'Erro no login',
+        description: error.message,
+        variant: 'destructive'
+      });
     } finally {
       setIsLoading(false);
     }
@@ -187,6 +136,12 @@ const AuthPage: React.FC = () => {
       }
 
       await signUp(signupData.email, signupData.password, userData);
+    } catch (error: any) {
+      toast({
+        title: 'Erro no cadastro',
+        description: error.message,
+        variant: 'destructive'
+      });
     } finally {
       setIsLoading(false);
     }
