@@ -8,9 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { restaurantes } from '@/data/mockData';
 import { Search, MapPin } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 const RestaurantesPage: React.FC = () => {
-  const [user, setUser] = useState<any>(null);
+  const { user, profile, loading } = useAuth();
   const [filtroCategoria, setFiltroCategoria] = useState('todos');
   const [filtroCidade, setFiltroCidade] = useState('todas');
   const [termoBusca, setTermoBusca] = useState('');
@@ -18,36 +19,14 @@ const RestaurantesPage: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Verificar se é usuário de teste primeiro
-    const testUser = localStorage.getItem('zdelivery_test_user');
-    if (testUser) {
-      try {
-        const { profile } = JSON.parse(testUser);
-        if (profile.tipo !== 'cliente') {
-          navigate('/auth');
-        } else {
-          setUser(profile);
-        }
-        return;
-      } catch (error) {
-        console.error('Error loading test user:', error);
-        localStorage.removeItem('zdelivery_test_user');
-      }
-    }
-
-    // Verificar usuário normal
-    const userData = localStorage.getItem('zdelivery_user');
-    if (userData) {
-      const parsedUser = JSON.parse(userData);
-      if (parsedUser.tipo !== 'cliente') {
+    if (!loading) {
+      if (!user) {
         navigate('/auth');
-      } else {
-        setUser(parsedUser);
+      } else if (profile && profile.tipo !== 'cliente') {
+        navigate('/auth');
       }
-    } else {
-      navigate('/auth');
     }
-  }, [navigate]);
+  }, [user, profile, loading, navigate]);
 
   useEffect(() => {
     let resultado = restaurantes;
@@ -102,11 +81,11 @@ const RestaurantesPage: React.FC = () => {
     setTermoBusca('');
   };
 
-  if (!user) return null;
+  if (loading || !user || !profile) return null;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header userType="cliente" userName={user.nome} cartCount={0} />
+      <Header userType="cliente" userName={profile?.nome} cartCount={0} />
       
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
