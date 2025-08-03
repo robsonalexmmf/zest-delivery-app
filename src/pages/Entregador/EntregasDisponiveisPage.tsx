@@ -31,6 +31,7 @@ const EntregasDisponiveisPage: React.FC = () => {
       } catch (error) {
         console.error('Error loading test user:', error);
         localStorage.removeItem('zdelivery_test_user');
+        navigate('/auth');
       }
     }
 

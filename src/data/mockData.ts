@@ -70,6 +70,17 @@ export const restaurantes: Restaurante[] = [
     taxaEntrega: 5.99,
     imagem: "https://images.unsplash.com/photo-1513104890138-7c749659a591?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
     descricao: "As melhores pizzas artesanais da cidade com massa fresca e ingredientes selecionados. Tradição familiar há mais de 20 anos."
+  },
+  {
+    id: "2",
+    nome: "Pizza Deliciosa",
+    categoria: "Pizzaria",
+    cidade: "São Paulo",
+    avaliacao: 4.9,
+    tempoEntrega: "25-40 min",
+    taxaEntrega: 6.99,
+    imagem: "https://images.unsplash.com/photo-1593560708920-61dd98c46a4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
+    descricao: "Pizzas artesanais com ingredientes premium e massas fermentadas naturalmente."
   }
 ];
 

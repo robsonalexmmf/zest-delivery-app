@@ -14,8 +14,7 @@ import { toast } from '@/hooks/use-toast';
 import { pagamentoService } from '@/services/pagamentoService';
 import { pedidosService } from '@/services/pedidosService';
 import { supabase } from '@/integrations/supabase/client';
-import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
-import { useSupabaseData } from '@/hooks/useSupabaseData';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Usuario {
   id: string;
@@ -74,8 +73,7 @@ interface Configuracao {
 
 const DashboardAdmin: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useSupabaseAuth();
-  const { userProfile, pedidos } = useSupabaseData();
+  const { user, profile } = useAuth();
   
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [pedidosList, setPedidosList] = useState<Pedido[]>([]);
@@ -128,7 +126,7 @@ const DashboardAdmin: React.FC = () => {
       }
 
       // Aguardar o carregamento do usuário
-      if (!user && userProfile === null) {
+      if (!user && profile === null) {
         return; // Ainda carregando
       }
       
@@ -139,20 +137,20 @@ const DashboardAdmin: React.FC = () => {
       }
       
       // Verificar se o perfil é do tipo admin
-      if (userProfile && userProfile.tipo !== 'admin') {
+      if (profile && profile.tipo !== 'admin') {
         toast({
           title: "Acesso negado",
           description: "Você não tem permissão para acessar esta página",
           variant: "destructive"
         });
         navigate('/auth');
-      } else if (userProfile) {
+      } else if (profile) {
         carregarDados();
       }
     };
     
     checkUserAccess();
-  }, [user, userProfile, navigate]);
+  }, [user, profile, navigate]);
 
   const carregarDados = async () => {
     // Carregar dados reais do Supabase quando possível
@@ -229,17 +227,18 @@ const DashboardAdmin: React.FC = () => {
       );
     }
 
-    // Formatar pedidos para a exibição na tabela
-    const pedidosFormatados = pedidos.map(p => ({
-      id: p.id.substring(0, 8),
-      cliente: p.profiles?.nome || 'Cliente',
-      restaurante: p.restaurantes?.nome || 'Restaurante',
-      entregador: p.entregadores?.profiles?.nome,
+    // Formatar pedidos para a exibição na tabela (usar dados de pedidosService)
+    const pedidosData = pedidosService.getPedidos();
+    const pedidosFormatados = pedidosData.map(p => ({
+      id: p.id.substring(3), // Remover "PED" prefix
+      cliente: p.cliente.nome,
+      restaurante: p.restaurante.nome,
+      entregador: p.entregador?.nome,
       status: p.status,
-      valor: parseFloat(p.total),
-      data: new Date(p.created_at).toLocaleDateString('pt-BR'),
-      hora: new Date(p.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-      metodoPagamento: p.metodo_pagamento
+      valor: p.total,
+      data: p.data,
+      hora: p.hora,
+      metodoPagamento: p.metodoPagamento
     }));
 
     // Dados de suporte simulados
@@ -472,11 +471,11 @@ const DashboardAdmin: React.FC = () => {
   });
 
   // Retornar null enquanto carrega ou se não tiver usuário
-  if (!userProfile) return null;
+  if (!profile) return null;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header userType="admin" userName={userProfile.nome || "Administrador"} />
+      <Header userType="admin" userName={profile.nome || "Administrador"} />
       
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">

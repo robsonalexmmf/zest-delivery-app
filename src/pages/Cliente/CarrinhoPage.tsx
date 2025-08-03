@@ -192,7 +192,7 @@ const CarrinhoPage: React.FC = () => {
         telefone: user.telefone || '(11) 99999-9999'
       },
       restaurante: {
-        nome: restaurantePedido?.nome || 'Pizza Deliciosa',
+        nome: restaurantePedido?.nome || 'Pizzaria do Mario',
         endereco: 'Rua das Flores, 123 - Centro',
         telefone: '(11) 3333-3333'
       },
@@ -226,12 +226,10 @@ const CarrinhoPage: React.FC = () => {
   };
 
   // Encontrar restaurante do primeiro item (assumindo que todos são do mesmo)
-  // Para o usuário de teste "restaurante", sempre usar "Pizza Deliciosa"
-  const testUser = localStorage.getItem('zdelivery_test_user');
-  const testProfile = testUser ? JSON.parse(testUser).profile : null;
-  
   const restaurantePedido = carrinho.length > 0 ? 
-    restaurantes.find(r => r.nome === 'Pizza Deliciosa') || restaurantes[0] : null;
+    (restaurantes.find(r => r.nome === 'Pizza Deliciosa') || 
+     restaurantes.find(r => r.nome === 'Pizzaria do Mario') || 
+     restaurantes[0]) : null;
 
   const subtotal = carrinho.reduce((total, item) => total + (item.preco * item.quantidade), 0);
   const taxaEntrega = restaurantePedido?.taxaEntrega || 0;
