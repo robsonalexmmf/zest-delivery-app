@@ -6,8 +6,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Star, Store, Truck } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { useSupabaseData } from '@/hooks/useSupabaseData';
-import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ModalAvaliacaoProps {
   isOpen: boolean;
@@ -26,8 +26,7 @@ const ModalAvaliacao: React.FC<ModalAvaliacaoProps> = ({
   entregador,
   onAvaliacaoEnviada
 }) => {
-  const { user } = useSupabaseAuth();
-  const { createAvaliacao, pedidos, updatePedidoStatus } = useSupabaseData();
+  const { user } = useAuth();
   const [notaRestaurante, setNotaRestaurante] = useState(0);
   const [notaEntregador, setNotaEntregador] = useState(0);
   const [comentarioRestaurante, setComentarioRestaurante] = useState('');
@@ -76,33 +75,45 @@ const ModalAvaliacao: React.FC<ModalAvaliacaoProps> = ({
     setLoading(true);
 
     try {
-      // Encontrar o pedido nos pedidos carregados
-      const pedido = pedidos.find(p => p.id === pedidoId);
-      
-      if (!pedido) {
+      // Buscar o pedido para obter os IDs necessários
+      const { data: pedido, error: pedidoError } = await supabase
+        .from('pedidos')
+        .select('restaurante_id, entregador_id')
+        .eq('id', pedidoId)
+        .single();
+
+      if (pedidoError || !pedido) {
         throw new Error('Pedido não encontrado');
       }
 
-      // Criar avaliação usando o hook
-      const { data, error } = await createAvaliacao({
-        pedido_id: pedidoId,
-        cliente_id: user.id,
-        restaurante_id: pedido.restaurante_id,
-        entregador_id: pedido.entregador_id,
-        nota_restaurante: notaRestaurante,
-        nota_entregador: entregador ? notaEntregador : null,
-        comentario_restaurante: comentarioRestaurante || null,
-        comentario_entregador: entregador ? comentarioEntregador || null : null
-      });
+      // Criar avaliação
+      const { data, error } = await supabase
+        .from('avaliacoes')
+        .insert({
+          pedido_id: pedidoId,
+          cliente_id: user.id,
+          restaurante_id: pedido.restaurante_id,
+          entregador_id: pedido.entregador_id,
+          nota_restaurante: notaRestaurante,
+          nota_entregador: entregador ? notaEntregador : null,
+          comentario_restaurante: comentarioRestaurante || null,
+          comentario_entregador: entregador ? comentarioEntregador || null : null
+        })
+        .select()
+        .single();
 
       if (error) {
         throw error;
       }
 
       // Atualizar status do pedido para avaliado
-      const updateResult = await updatePedidoStatus(pedidoId, "entregue", undefined, true);
-      if (updateResult.error) {
-        console.warn('Erro ao atualizar status de avaliado:', updateResult.error);
+      const { error: updateError } = await supabase
+        .from('pedidos')
+        .update({ avaliado: true })
+        .eq('id', pedidoId);
+
+      if (updateError) {
+        console.warn('Erro ao atualizar status de avaliado:', updateError);
       }
 
       toast({

@@ -224,21 +224,19 @@ const PagamentoPix: React.FC<PagamentoPixProps> = ({
               <Card>
                 <CardContent className="p-4">
                   <div className="text-center space-y-4">
-                    {pixData.qrCodeBase64 ? (
-                      <div className="bg-white p-4 rounded-lg border-2 border-dashed border-gray-300">
+                    <div className="bg-white p-4 rounded-lg border-2 border-dashed border-gray-300">
+                      {pixData.qrCodeBase64 ? (
                         <img
                           src={`data:image/png;base64,${pixData.qrCodeBase64}`}
                           alt="QR Code PIX"
                           className="w-32 h-32 mx-auto"
                         />
-                      </div>
-                    ) : (
-                      <div className="bg-white p-4 rounded-lg border-2 border-dashed border-gray-300">
+                      ) : (
                         <div className="w-32 h-32 mx-auto bg-gray-100 rounded-lg flex items-center justify-center">
-                          <span className="text-gray-500 text-xs">QR Code PIX</span>
+                          <span className="text-gray-500 text-xs">QR Code não disponível</span>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                     <p className="text-sm text-gray-600">
                       Escaneie com seu app de pagamentos
                     </p>

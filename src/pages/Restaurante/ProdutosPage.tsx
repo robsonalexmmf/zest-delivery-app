@@ -14,6 +14,7 @@ import { Plus, Edit, Trash2, Package, Settings, ImageIcon } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import ImageUpload from '@/components/common/ImageUpload';
 import { useSupabaseSync } from '@/hooks/useSupabaseSync';
+import { supabase } from '@/integrations/supabase/client';
 import pizzaNapolitanaImg from '@/assets/pizza-napolitana.jpg';
 import aguaMineralImg from '@/assets/agua-mineral.jpg';
 import bruschettalItalianaImg from '@/assets/bruschetta-italiana.jpg';
@@ -63,10 +64,39 @@ const ProdutosPage: React.FC = () => {
     }
   }, [navigate]);
 
-  const carregarProdutos = () => {
+  const carregarProdutos = async () => {
     if (!user) return;
     
-    // Primeiro tentar carregar do localStorage específico do restaurante
+    try {
+      // Primeiro tentar carregar produtos do Supabase
+      const { data: restaurante } = await supabase
+        .from('restaurantes')
+        .select('id')
+        .eq('nome', user.nome)
+        .maybeSingle();
+
+      if (restaurante) {
+        const { data: produtosSupabase } = await supabase
+          .from('produtos')
+          .select('*')
+          .eq('restaurante_id', restaurante.id)
+          .order('created_at', { ascending: false });
+
+        if (produtosSupabase && produtosSupabase.length > 0) {
+          setProdutos(produtosSupabase);
+          // Sincronizar com localStorage
+          localStorage.setItem(`restaurant_products_${user.nome}`, JSON.stringify(produtosSupabase));
+          const produtosGlobais = JSON.parse(localStorage.getItem('zdelivery_produtos_globais') || '{}');
+          produtosGlobais[user.nome] = produtosSupabase;
+          localStorage.setItem('zdelivery_produtos_globais', JSON.stringify(produtosGlobais));
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar produtos do Supabase:', error);
+    }
+    
+    // Fallback para localStorage específico do restaurante
     const produtosSalvos = localStorage.getItem(`restaurant_products_${user.nome}`);
     if (produtosSalvos) {
       const produtos = JSON.parse(produtosSalvos);

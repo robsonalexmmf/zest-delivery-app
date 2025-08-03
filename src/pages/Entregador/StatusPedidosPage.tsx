@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, MapPin, Clock, ArrowLeft } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 import { pedidosService, Pedido } from '@/services/pedidosService';
 
 const StatusPedidosPage: React.FC = () => {
@@ -108,6 +109,10 @@ const StatusPedidosPage: React.FC = () => {
       const sucesso = pedidosService.atualizarStatusPedido(pedidoId, 'entregue');
       
       if (sucesso) {
+        toast({
+          title: 'Entrega confirmada!',
+          description: 'O pedido foi marcado como entregue com sucesso.',
+        });
         carregarPedidos();
       }
     }
