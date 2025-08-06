@@ -166,13 +166,16 @@ const PagamentoPix: React.FC<PagamentoPixProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md" aria-describedby="pix-payment-description">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <CreditCard className="w-5 h-5 text-green-600" />
             <span>Pagamento PIX</span>
           </DialogTitle>
         </DialogHeader>
+        <div id="pix-payment-description" className="sr-only">
+          Modal para realizar pagamento via PIX. Contém QR code e código copia e cola para pagamento.
+        </div>
 
         <div className="space-y-6">
           {/* Informações do Pedido */}

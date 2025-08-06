@@ -227,9 +227,7 @@ const CarrinhoPage: React.FC = () => {
 
   // Encontrar restaurante do primeiro item (assumindo que todos são do mesmo)
   const restaurantePedido = carrinho.length > 0 ? 
-    (restaurantes.find(r => r.nome === 'Pizza Deliciosa') || 
-     restaurantes.find(r => r.nome === 'Pizzaria do Mario') || 
-     restaurantes[0]) : null;
+    restaurantes.find(r => r.nome === 'Pizzaria do Mario') || restaurantes[0] : null;
 
   const subtotal = carrinho.reduce((total, item) => total + (item.preco * item.quantidade), 0);
   const taxaEntrega = restaurantePedido?.taxaEntrega || 0;
