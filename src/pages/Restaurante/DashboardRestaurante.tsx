@@ -252,8 +252,258 @@ const DashboardRestaurante: React.FC = () => {
                     </TabsList>
                     
                     <TabsContent value="basico" className="space-y-6">
-                      {/* Conteúdo das configurações básicas - mantido o mesmo */}
-                      {/* ... resto do conteúdo omitido para brevidade ... */}
+                      {/* Informações Básicas */}
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="nome">Nome do Restaurante</Label>
+                            <Input
+                              id="nome"
+                              value={configuracoes.nome}
+                              onChange={(e) => setConfiguracoes(prev => ({ ...prev, nome: e.target.value }))}
+                              placeholder="Nome do seu restaurante"
+                            />
+                          </div>
+                          
+                          <div>
+                            <Label htmlFor="categoria">Categoria</Label>
+                            <Select 
+                              value={configuracoes.categoria} 
+                              onValueChange={(value) => setConfiguracoes(prev => ({ ...prev, categoria: value }))}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione uma categoria" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {categorias.map(cat => (
+                                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div>
+                            <Label htmlFor="cidade">Cidade</Label>
+                            <Select 
+                              value={configuracoes.cidade} 
+                              onValueChange={(value) => setConfiguracoes(prev => ({ ...prev, cidade: value }))}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione sua cidade" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {cidades.map(cidade => (
+                                  <SelectItem key={cidade} value={cidade}>{cidade}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div>
+                            <Label htmlFor="telefone">Telefone</Label>
+                            <Input
+                              id="telefone"
+                              value={configuracoes.telefone}
+                              onChange={(e) => setConfiguracoes(prev => ({ ...prev, telefone: e.target.value }))}
+                              placeholder="(11) 99999-9999"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="endereco">Endereço Completo</Label>
+                            <Textarea
+                              id="endereco"
+                              value={configuracoes.endereco}
+                              onChange={(e) => setConfiguracoes(prev => ({ ...prev, endereco: e.target.value }))}
+                              placeholder="Endereço completo do restaurante"
+                              rows={3}
+                            />
+                          </div>
+
+                          <div>
+                            <Label htmlFor="descricao">Descrição</Label>
+                            <Textarea
+                              id="descricao"
+                              value={configuracoes.descricao}
+                              onChange={(e) => setConfiguracoes(prev => ({ ...prev, descricao: e.target.value }))}
+                              placeholder="Descrição do seu restaurante"
+                              rows={4}
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor="taxa-entrega">Taxa de Entrega (R$)</Label>
+                              <Input
+                                id="taxa-entrega"
+                                type="number"
+                                step="0.01"
+                                value={configuracoes.taxa_entrega}
+                                onChange={(e) => setConfiguracoes(prev => ({ 
+                                  ...prev, 
+                                  taxa_entrega: parseFloat(e.target.value) || 0 
+                                }))}
+                              />
+                            </div>
+
+                            <div>
+                              <Label htmlFor="tempo-preparo">Tempo Preparo (min)</Label>
+                              <Input
+                                id="tempo-preparo"
+                                type="number"
+                                value={configuracoes.tempo_preparo_medio}
+                                onChange={(e) => setConfiguracoes(prev => ({ 
+                                  ...prev, 
+                                  tempo_preparo_medio: parseInt(e.target.value) || 30 
+                                }))}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Horários de Funcionamento */}
+                      <div>
+                        <h3 className="text-lg font-semibold mb-4">Horários de Funcionamento</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="abertura">Abertura</Label>
+                            <Input
+                              id="abertura"
+                              type="time"
+                              value={configuracoes.horario_funcionamento.abertura}
+                              onChange={(e) => setConfiguracoes(prev => ({ 
+                                ...prev, 
+                                horario_funcionamento: { 
+                                  ...prev.horario_funcionamento, 
+                                  abertura: e.target.value 
+                                } 
+                              }))}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="fechamento">Fechamento</Label>
+                            <Input
+                              id="fechamento"
+                              type="time"
+                              value={configuracoes.horario_funcionamento.fechamento}
+                              onChange={(e) => setConfiguracoes(prev => ({ 
+                                ...prev, 
+                                horario_funcionamento: { 
+                                  ...prev.horario_funcionamento, 
+                                  fechamento: e.target.value 
+                                } 
+                              }))}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Configurações PIX */}
+                      <div>
+                        <h3 className="text-lg font-semibold mb-4">Configurações PIX</h3>
+                        <div className="space-y-4">
+                          <div className="flex items-center space-x-2">
+                            <Switch 
+                              checked={configuracoes.pix.ativo}
+                              onCheckedChange={(checked) => setConfiguracoes(prev => ({ 
+                                ...prev, 
+                                pix: { ...prev.pix, ativo: checked } 
+                              }))}
+                            />
+                            <Label>Aceitar PIX</Label>
+                          </div>
+
+                          {configuracoes.pix.ativo && (
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <Label htmlFor="tipo-chave">Tipo de Chave PIX</Label>
+                                <Select 
+                                  value={configuracoes.pix.tipo}
+                                  onValueChange={(value: any) => setConfiguracoes(prev => ({ 
+                                    ...prev, 
+                                    pix: { ...prev.pix, tipo: value } 
+                                  }))}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="cpf">CPF</SelectItem>
+                                    <SelectItem value="email">Email</SelectItem>
+                                    <SelectItem value="telefone">Telefone</SelectItem>
+                                    <SelectItem value="aleatorio">Chave Aleatória</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              
+                              <div>
+                                <Label htmlFor="chave-pix">Chave PIX</Label>
+                                <div className="flex space-x-2">
+                                  <Input
+                                    id="chave-pix"
+                                    value={configuracoes.pix.chave}
+                                    onChange={(e) => setConfiguracoes(prev => ({ 
+                                      ...prev, 
+                                      pix: { ...prev.pix, chave: e.target.value } 
+                                    }))}
+                                    placeholder="Sua chave PIX"
+                                  />
+                                  <Button 
+                                    variant="outline" 
+                                    onClick={handleTestarPix}
+                                    disabled={!configuracoes.pix.chave.trim()}
+                                  >
+                                    Testar
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Métodos de Pagamento */}
+                      <div>
+                        <h3 className="text-lg font-semibold mb-4">Métodos de Pagamento Aceitos</h3>
+                        <div className="space-y-3">
+                          <div className="flex items-center space-x-2">
+                            <Switch 
+                              checked={configuracoes.aceita_pix}
+                              onCheckedChange={(checked) => setConfiguracoes(prev => ({ ...prev, aceita_pix: checked }))}
+                            />
+                            <Label>PIX</Label>
+                          </div>
+                          
+                          <div className="flex items-center space-x-2">
+                            <Switch 
+                              checked={configuracoes.aceita_cartao}
+                              onCheckedChange={(checked) => setConfiguracoes(prev => ({ ...prev, aceita_cartao: checked }))}
+                            />
+                            <Label>Cartão de Crédito/Débito</Label>
+                          </div>
+                          
+                          <div className="flex items-center space-x-2">
+                            <Switch 
+                              checked={configuracoes.aceita_dinheiro}
+                              onCheckedChange={(checked) => setConfiguracoes(prev => ({ ...prev, aceita_dinheiro: checked }))}
+                            />
+                            <Label>Dinheiro</Label>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Botões de Ação */}
+                      <div className="flex justify-end space-x-4 pt-6">
+                        <Button variant="outline" onClick={() => setShowConfigDialog(false)}>
+                          Cancelar
+                        </Button>
+                        <Button onClick={salvarConfiguracaoBasica} className="bg-red-600 hover:bg-red-700">
+                          Salvar Configurações
+                        </Button>
+                      </div>
                     </TabsContent>
                     
                     <TabsContent value="avancadas">
