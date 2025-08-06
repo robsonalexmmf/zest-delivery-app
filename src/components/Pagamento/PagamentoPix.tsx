@@ -224,18 +224,15 @@ const PagamentoPix: React.FC<PagamentoPixProps> = ({
               <Card>
                 <CardContent className="p-4">
                   <div className="text-center space-y-4">
-                    <div className="bg-white p-4 rounded-lg border-2 border-dashed border-gray-300">
-                      {pixData.qrCodeBase64 ? (
-                        <img
-                          src={`data:image/png;base64,${pixData.qrCodeBase64}`}
-                          alt="QR Code PIX"
-                          className="w-32 h-32 mx-auto"
-                        />
-                      ) : (
-                        <div className="w-32 h-32 mx-auto bg-gray-100 rounded-lg flex items-center justify-center">
-                          <span className="text-gray-500 text-xs">QR Code não disponível</span>
-                        </div>
-                      )}
+                   <div className="bg-white p-4 rounded-lg border-2 border-dashed border-gray-300">
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(pixData.pixCopyPaste)}&format=png`}
+                        alt="QR Code PIX"
+                        className="w-32 h-32 mx-auto"
+                        onError={(e) => {
+                          e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxyZWN0IHg9IjIwIiB5PSIyMCIgd2lkdGg9IjE2MCIgaGVpZ2h0PSIxNjAiIGZpbGw9IndoaXRlIiBzdHJva2U9IiNEMUQ1REIiIHN0cm9rZS13aWR0aD0iMiIvPgo8dGV4dCB4PSIxMDAiIHk9IjEwNSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzZCNzI4MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0Ij5RUiBDb2RlPC90ZXh0Pgo8L3N2Zz4K';
+                        }}
+                      />
                     </div>
                     <p className="text-sm text-gray-600">
                       Escaneie com seu app de pagamentos
