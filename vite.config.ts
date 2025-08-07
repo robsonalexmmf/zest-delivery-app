@@ -12,13 +12,12 @@ export default defineConfig(({ mode }) => ({
   build: {
     outDir: "dist",
     sourcemap: false,
-    minify: 'terser',
     rollupOptions: {
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
           router: ['react-router-dom'],
-          ui: ['@radix-ui/react-dialog', '@radix-ui/react-slot', '@radix-ui/react-tabs'],
+          radix: ['@radix-ui/react-dialog', '@radix-ui/react-slot', '@radix-ui/react-tabs'],
         },
       },
     },
