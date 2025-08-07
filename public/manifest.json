@@ -1,0 +1,19 @@
+{
+  "name": "Z Delivery",
+  "short_name": "ZDelivery",
+  "description": "Plataforma de delivery conectando clientes, restaurantes e entregadores",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#dc2626",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    }
+  ],
+  "lang": "pt-BR",
+  "orientation": "portrait-primary",
+  "categories": ["food", "delivery", "business"]
+}

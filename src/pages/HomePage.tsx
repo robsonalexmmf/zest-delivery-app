@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,11 +14,23 @@ import { useAuth } from '@/hooks/useAuth';
 const HomePage: React.FC = () => {
   const { toast } = useToast();
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const [showPixModal, setShowPixModal] = useState(false);
   const [pixCode, setPixCode] = useState('');
   const [currentPayment, setCurrentPayment] = useState<any>(null);
 
   const handlePlanSubscription = async (planType: string, price: number) => {
+    // Verificar se usuário está logado
+    if (!user) {
+      toast({
+        title: "Login necessário",
+        description: "Faça login ou cadastre-se para assinar um plano",
+        variant: "destructive"
+      });
+      navigate('/auth');
+      return;
+    }
+
     try {
       const pagamento = pagamentoService.criarPagamentoPIX(planType, price);
       
@@ -32,7 +44,6 @@ const HomePage: React.FC = () => {
       });
       
     } catch (error) {
-      console.error('Erro ao processar pagamento:', error);
       toast({
         title: "Erro no pagamento",
         description: "Não foi possível processar o pagamento. Tente novamente.",

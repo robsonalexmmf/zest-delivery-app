@@ -32,6 +32,9 @@ import StatusPedidosPage from "./pages/Entregador/StatusPedidosPage";
 // Páginas do Administrador
 import DashboardAdmin from "./pages/Admin/DashboardAdmin";
 
+// Página de Checkout
+import CheckoutPage from "./pages/CheckoutPage";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -68,6 +71,9 @@ const App = () => (
             
             {/* Rotas do Administrador */}
             <Route path="/dashboard-admin" element={<DashboardAdmin />} />
+            
+            {/* Rota de Checkout */}
+            <Route path="/checkout" element={<CheckoutPage />} />
             
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />

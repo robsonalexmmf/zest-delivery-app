@@ -319,7 +319,9 @@ const EntregasDisponiveisPage: React.FC = () => {
                   Não há entregas disponíveis na sua região no momento. Volte em instantes!
                 </p>
                 <Button 
-                  onClick={() => window.location.reload()}
+                  onClick={() => {
+                    window.location.reload();
+                  }}
                   variant="outline"
                 >
                   Atualizar Lista

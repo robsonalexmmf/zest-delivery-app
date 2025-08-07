@@ -72,7 +72,7 @@ const PagamentoPix: React.FC<PagamentoPixProps> = ({
             });
           }
         } catch (error) {
-          console.error('Erro ao verificar status:', error);
+          // Erro silencioso para verificação de status
         }
       }
     }, 5000);
@@ -100,7 +100,6 @@ const PagamentoPix: React.FC<PagamentoPixProps> = ({
 
       setPixData(pixResponse);
     } catch (error) {
-      console.error('Erro ao criar PIX:', error);
       setErro(error instanceof Error ? error.message : 'Erro ao gerar código PIX');
       toast({
         title: 'Erro ao criar PIX',
