@@ -8,21 +8,27 @@ import { Badge } from '@/components/ui/badge';
 import { restaurantes, produtos } from '@/data/mockData';
 import { Star, Clock, MapPin, ShoppingCart } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 const RestauranteDetalhePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const [user, setUser] = useState<any>(null);
+  const { user, profile, loading } = useAuth();
   const [restaurante, setRestaurante] = useState<any>(null);
   const [produtosRestaurante, setProdutosRestaurante] = useState<any[]>([]);
   const [carrinho, setCarrinho] = useState<any[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const userData = localStorage.getItem('zdelivery_user');
-    if (userData) {
-      setUser(JSON.parse(userData));
-    } else {
-      navigate('/auth');
+    // Guarda de autenticação usando o contexto
+    if (!loading) {
+      if (!user) {
+        navigate('/auth');
+        return;
+      }
+      if (profile && profile.tipo !== 'cliente') {
+        navigate('/auth');
+        return;
+      }
     }
 
     // Buscar restaurante pelo ID
@@ -49,7 +55,7 @@ const RestauranteDetalhePage: React.FC = () => {
     if (carrinhoSalvo) {
       setCarrinho(JSON.parse(carrinhoSalvo));
     }
-  }, [id, navigate]);
+  }, [id, navigate, loading, user, profile]);
 
   const handleAddToCart = (produto: any) => {
     const novoCarrinho = [...carrinho];
@@ -73,11 +79,11 @@ const RestauranteDetalhePage: React.FC = () => {
   const categoriasProdutos = Array.from(new Set(produtosRestaurante.map(p => p.categoria)));
   const totalItensCarrinho = carrinho.reduce((total, item) => total + item.quantidade, 0);
 
-  if (!user || !restaurante) return null;
+  if (loading || !user || !profile || !restaurante) return null;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header userType="cliente" userName={user.nome} cartCount={totalItensCarrinho} />
+      <Header userType="cliente" userName={profile?.nome} cartCount={totalItensCarrinho} />
       
       <main className="container mx-auto px-4 py-8">
         {/* Header do Restaurante */}
