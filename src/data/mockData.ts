@@ -1,3 +1,8 @@
+import pizzaNapolitana from '@/assets/pizza-napolitana.jpg';
+import aguaMineral from '@/assets/agua-mineral.jpg';
+import bruschettaItaliana from '@/assets/bruschetta-italiana.jpg';
+import paoAlhoEspecial from '@/assets/pao-alho-especial.jpg';
+
 export interface User {
   id: string;
   nome: string;
@@ -112,7 +117,7 @@ export const produtos = [
     descricao: "Molho de tomate, mussarela, fatias de tomate fresco, anchovas, azeitonas pretas e orégano", 
     preco: 44.90, 
     categoria: "Pizzas Clássicas", 
-    imagem: "/src/assets/pizza-napolitana.jpg", 
+    imagem: pizzaNapolitana, 
     disponivel: true 
   },
   { 
@@ -290,7 +295,7 @@ export const produtos = [
     descricao: "Água mineral natural gelada para acompanhar sua refeição", 
     preco: 4.50, 
     categoria: "Bebidas", 
-    imagem: "/src/assets/agua-mineral.jpg", 
+    imagem: aguaMineral, 
     disponivel: true 
   },
   { 
@@ -312,7 +317,7 @@ export const produtos = [
     descricao: "Pão italiano tostado com tomate, manjericão, alho e azeite extravirgem (4 unidades)", 
     preco: 18.90, 
     categoria: "Entradas", 
-    imagem: "/src/assets/bruschetta-italiana.jpg", 
+    imagem: bruschettaItaliana, 
     disponivel: true 
   },
   { 
@@ -342,7 +347,7 @@ export const produtos = [
     descricao: "Pão francês recheado com alho, ervas finas, manteiga e queijo gratinado", 
     preco: 16.90, 
     categoria: "Entradas", 
-    imagem: "/src/assets/pao-alho-especial.jpg", 
+    imagem: paoAlhoEspecial, 
     disponivel: true 
   },
 
