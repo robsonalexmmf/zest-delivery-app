@@ -35,6 +35,8 @@ const AuthPage: React.FC = () => {
     placa: ''
   });
 
+  const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
+
   const { user, profile, signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -65,6 +67,13 @@ const AuthPage: React.FC = () => {
       }
     }
   }, [user, profile, navigate, location.search]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const mode = params.get('mode');
+    if (mode === 'signup') setActiveTab('signup');
+    else if (mode === 'login') setActiveTab('login');
+  }, [location.search]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -182,7 +191,7 @@ const AuthPage: React.FC = () => {
             <CardTitle className="text-center">Acesso ao Sistema</CardTitle>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="login" className="w-full">
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'login' | 'signup')} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="login">Entrar</TabsTrigger>
                 <TabsTrigger value="signup">Cadastrar</TabsTrigger>

@@ -33,7 +33,7 @@ const HomePage: React.FC = () => {
         title: 'Login necessário',
         description: 'Faça login ou cadastre-se para continuar para o checkout',
       });
-      navigate(`/auth?next=${encodeURIComponent(`/checkout?plan=${planSlug}`)}`);
+      navigate(`/auth?mode=signup&next=${encodeURIComponent(`/checkout?plan=${planSlug}`)}`);
       return;
     }
 
@@ -48,7 +48,7 @@ const HomePage: React.FC = () => {
         title: 'Login necessário',
         description: 'Crie sua conta para continuar para o checkout',
       });
-      navigate(`/auth?next=${encodeURIComponent(next)}`);
+      navigate(`/auth?mode=signup&next=${encodeURIComponent(next)}`);
       return;
     }
     navigate(next);
