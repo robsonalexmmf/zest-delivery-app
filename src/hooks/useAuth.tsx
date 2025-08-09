@@ -15,7 +15,7 @@ interface AuthContextType {
     telefone?: string;
     endereco?: string;
     tipo?: 'cliente' | 'restaurante' | 'entregador';
-  }) => Promise<void>;
+  }, nextRedirect?: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<void>;
@@ -82,16 +82,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signUp = async (email: string, password: string, userData: {
-    nome: string;
-    telefone?: string;
-    endereco?: string;
-    tipo?: 'cliente' | 'restaurante' | 'entregador';
-  }) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    userData: {
+      nome: string;
+      telefone?: string;
+      endereco?: string;
+      tipo?: 'cliente' | 'restaurante' | 'entregador';
+    },
+    nextRedirect?: string
+  ) => {
+    const origin = window.location.origin;
+    const redirectBase = `${origin}/auth?confirmed=1`;
+    const emailRedirectTo = nextRedirect
+      ? `${redirectBase}&next=${encodeURIComponent(nextRedirect)}`
+      : redirectBase;
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
+        emailRedirectTo,
         data: {
           nome: userData.nome,
           tipo: userData.tipo || 'cliente'
@@ -101,7 +113,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (error) throw error;
   };
-
   // Função especial para login com usuários de teste
   const signInWithTestUser = async (email: string, password: string) => {
     // Dados mockados para usuários de teste

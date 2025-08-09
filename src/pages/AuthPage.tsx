@@ -152,7 +152,14 @@ const AuthPage: React.FC = () => {
         });
       }
 
-      await signUp(signupData.email, signupData.password, userData);
+      const params = new URLSearchParams(location.search);
+      const next = params.get('next') || '/';
+      await signUp(signupData.email, signupData.password, userData as any, next);
+
+      toast({
+        title: 'Confirme seu e-mail',
+        description: 'Enviamos um link de confirmação. Após confirmar, você será redirecionado ao checkout.',
+      });
     } catch (error: any) {
       toast({
         title: 'Erro no cadastro',
