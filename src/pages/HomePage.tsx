@@ -20,43 +20,38 @@ const HomePage: React.FC = () => {
   const [currentPayment, setCurrentPayment] = useState<any>(null);
 
   const handlePlanSubscription = async (planType: string, price: number) => {
-    // Verificar se usuário está logado
+    // Redireciona para checkout do Mercado Pago (simulado) após login/cadastro
+    const planMap: Record<string, string> = {
+      'Básico': 'basico',
+      'Premium': 'premium',
+      'Enterprise': 'enterprise',
+    };
+    const planSlug = planMap[planType] || 'premium';
+
     if (!user) {
       toast({
-        title: "Login necessário",
-        description: "Faça login ou cadastre-se para assinar um plano",
-        variant: "destructive"
+        title: 'Login necessário',
+        description: 'Faça login ou cadastre-se para continuar para o checkout',
       });
-      navigate('/auth');
+      navigate(`/auth?next=${encodeURIComponent(`/checkout?plan=${planSlug}`)}`);
       return;
     }
 
-    try {
-      const pagamento = pagamentoService.criarPagamentoPIX(planType, price);
-      
-      setCurrentPayment(pagamento);
-      setPixCode(pagamento.pixCode || '');
-      setShowPixModal(true);
-
-      toast({
-        title: "Pagamento PIX gerado",
-        description: "Use o código PIX para completar o pagamento",
-      });
-      
-    } catch (error) {
-      toast({
-        title: "Erro no pagamento",
-        description: "Não foi possível processar o pagamento. Tente novamente.",
-        variant: "destructive"
-      });
-    }
+    navigate(`/checkout?plan=${planSlug}`);
   };
 
   const handleContactSales = () => {
-    toast({
-      title: "Contato comercial",
-      description: "Em breve você será redirecionado para nosso time de vendas",
-    });
+    // Fluxo: login/cadastro -> checkout Enterprise
+    const next = `/checkout?plan=enterprise`;
+    if (!user) {
+      toast({
+        title: 'Login necessário',
+        description: 'Crie sua conta para continuar para o checkout',
+      });
+      navigate(`/auth?next=${encodeURIComponent(next)}`);
+      return;
+    }
+    navigate(next);
   };
 
   const copyPixCode = () => {

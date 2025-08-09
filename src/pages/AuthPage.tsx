@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,10 +37,18 @@ const AuthPage: React.FC = () => {
 
   const { user, profile, signIn, signUp } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     if (user && profile) {
-      switch(profile.tipo) {
+      const params = new URLSearchParams(location.search);
+      const next = params.get('next');
+      if (next) {
+        navigate(next);
+        return;
+      }
+
+      switch (profile.tipo) {
         case 'admin':
           navigate('/dashboard-admin');
           break;
@@ -56,7 +64,7 @@ const AuthPage: React.FC = () => {
           break;
       }
     }
-  }, [user, profile, navigate]);
+  }, [user, profile, navigate, location.search]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
