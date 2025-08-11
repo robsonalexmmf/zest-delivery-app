@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Check, Copy, CreditCard } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { pagamentoService } from '@/services/pagamentoService';
+import { mercadoPagoService } from '@/services/mercadoPagoService';
 import Logo from '@/components/common/Logo';
 
 const CheckoutPage: React.FC = () => {
